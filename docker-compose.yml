@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # Airbyte - Data Ingestion
+  airbyte:
+    image: airbyte/airbyte:latest
+    container_name: airbyte
+    ports:
+      - "8000:8000"
+    environment:
+      - AIRBYTE_VERSION=latest
+    volumes:
+      - airbyte_data:/data
+    networks:
+      - atb_network
+    restart: unless-stopped
+
+  # PostgreSQL for Airbyte metadata
+  airbyte-db:
+    image: postgres:15-alpine
+    container_name: airbyte-db
+    environment:
+      POSTGRES_DB: airbyte
+      POSTGRES_USER: airbyte
+      POSTGRES_PASSWORD: airbyte_password
+    volumes:
+      - airbyte_db:/var/lib/postgresql/data
+    networks:
+      - atb_network
+    restart: unless-stopped
+
+  # Apache Airflow - Orchestration
+  airflow:
+    image: apache/airflow:2.8.0-python3.11
+    container_name: airflow
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__DAGS_FOLDER: /usr/local/airflow/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    volumes:
+      - ./2_orchestration/dags:/usr/local/airflow/dags
+      - ./3_transformation:/usr/local/airflow/dbt
+      - ./4_ml:/usr/local/airflow/ml
+    depends_on:
+      - airflow-db
+    networks:
+      - atb_network
+    restart: unless-stopped
+    command: bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com 2>/dev/null || true && airflow scheduler"
+
+  # PostgreSQL for Airflow metadata
+  airflow-db:
+    image: postgres:15-alpine
+    container_name: airflow-db
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow_password
+    volumes:
+      - airflow_db:/var/lib/postgresql/data
+    networks:
+      - atb_network
+    restart: unless-stopped
+
+  # Airflow Webserver
+  airflow-webserver:
+    image: apache/airflow:2.8.0-python3.11
+    container_name: airflow-webserver
+    ports:
+      - "8081:8080"
+    environment:
+      AIRFLOW__CORE__DAGS_FOLDER: /usr/local/airflow/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    volumes:
+      - ./2_orchestration/dags:/usr/local/airflow/dags
+      - ./3_transformation:/usr/local/airflow/dbt
+      - ./4_ml:/usr/local/airflow/ml
+    depends_on:
+      - airflow-db
+    networks:
+      - atb_network
+    restart: unless-stopped
+    command: airflow webserver
+
+networks:
+  atb_network:
+    driver: bridge
+
+volumes:
+  airbyte_data:
+  airbyte_db:
+  airflow_db:

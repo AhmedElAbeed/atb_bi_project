@@ -1,0 +1,59 @@
+# Environment and Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Python
+*.py[cod]
+*$py.class
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# Airflow
+airflow.db
+
+# ML models and outputs
+4_ml/models/*.pkl
+4_ml/models/*.joblib
+4_ml/outputs/*.csv
+4_ml/outputs/*.json
+
+# Data processing
+data/processed/
+*.tmp
+
+# Power BI
+*.pbix-cache
+
+# Docker
+docker-compose.override.yml
