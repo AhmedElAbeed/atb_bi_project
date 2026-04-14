@@ -185,38 +185,71 @@ Validation checklist:
 
 ## 8) Transformation Layer (dbt)
 
+**STATUS**: Ready to implement - ODS data loaded and ready
+
 ### 8.1 Configure dbt profile
 
-In profiles.yml, configure SQL Server connection:
+Create `3_transformation/profiles.yml` with SQL Server connection:
 
-- host
-- port
-- database
-- schema (target schemas used by models)
-- username/password or trusted auth
+```yaml
+atb_project:
+  target: dev
+  outputs:
+    dev:
+      type: sqlserver
+      server: DESKTOP-B0PDEI7
+      port: 1433
+      database: ATB_BI
+      schema: PFE_DWH
+      threads: 4
+      authentication: windows  # Uses Windows auth
+```
 
-### 8.2 Build Sequence
+### 8.2 Initialize dbt Project
 
 ```powershell
 cd 3_transformation
-$dbtProfiles = (Get-Location).Path
-$env:DBT_PROFILES_DIR = $dbtProfiles
 
+# Verify connection
 dbt debug
-dbt deps
-dbt seed
+
+# Clean and rebuild
+dbt clean
 dbt run
 dbt test
 ```
 
-### 8.3 Model Flow
+### 8.3 Model Build Order (Constellation Schema)
 
-- staging: clean ODS raw data
-- intermediate: enrich business logic and risk indicators
-- warehouse dimensions: conformed dimensions
-- warehouse facts:
-  - fait_account
-  - fait_customer_risk
+**Staging Layer** (clean ODS data):
+- stg_account.sql
+- stg_customer.sql  
+- stg_currency.sql
+- stg_dao.sql
+- stg_industry.sql
+- stg_sector.sql
+- stg_target.sql
+
+**Intermediate Layer** (business logic & risk):
+- int_customer_enriched.sql
+- int_account_enriched.sql
+- int_customer_risk_score.sql
+
+**Warehouse Layer** (constellation model):
+
+Dimensions (shared):
+- dim_customer.sql
+- dim_branch.sql
+- dim_date.sql
+- dim_sector.sql
+- dim_industry.sql
+- dim_currency.sql
+- dim_target.sql
+- dim_risk_profile.sql (new)
+
+Facts (2 tables):
+- fact_account.sql (descriptive KPIs)
+- fact_customer_risk.sql (risk & compliance)
 
 ## 9) Orchestration Layer (Airflow)
 
