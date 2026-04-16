@@ -1,0 +1,22 @@
+{
+  "name": "MSSQL_Production",
+  "workspaceId": "524f3fec-4d3d-4ed4-b4a3-93243c05cbc4",
+  "definitionId": "d4353156-9217-4cad-8dd7-c108fd4f74cf",
+  "configuration": {
+    "schema": "PFE_ODS",
+    "host": "192.168.1.57",
+    "port": 1434,
+    "user": "airbyte_user",
+    "database": "ATB_BI",
+    "password": "******",
+    "load_type": {
+      "load_type": "INSERT"
+    },
+    "ssl_method": {
+      "name": "unencrypted"
+    },
+    "tunnel_method": {
+      "tunnel_method": "NO_TUNNEL"
+    }
+  }
+}

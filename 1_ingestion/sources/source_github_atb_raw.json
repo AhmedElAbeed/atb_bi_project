@@ -1,0 +1,110 @@
+[
+  {
+    "name": "ACCOUNT UPLOAD",
+    "workspaceId": "524f3fec-4d3d-4ed4-b4a3-93243c05cbc4",
+    "definitionId": "778daa7c-feaf-4db6-96f3-70fd645acc77",
+    "configuration": {
+      "format": "csv",
+      "provider": {
+        "storage": "HTTPS",
+        "user_agent": false
+      },
+      "url": "https://raw.githubusercontent.com/AhmedElAbeed/atb_bi_project/main/data/raw/account.csv",
+      "dataset_name": "ODS_ACCOUNT",
+      "reader_options": "{   \"sep\": \"|\",   \"header\": 0,   \"dtype\": {     \"RECID\": \"string\",     \"CUSTOMER_NO\": \"string\",     \"CATEGORY\": \"string\",     \"CURRENCY\": \"string\",     \"ACCOUNT_OFFICER\": \"string\",     \"WORKING_BALANCE\": \"float\",     \"OPENING_DATE\": \"string\"   } }"
+    }
+  },
+  {
+  "name": "Currency Upload",
+  "workspaceId": "524f3fec-4d3d-4ed4-b4a3-93243c05cbc4",
+  "definitionId": "778daa7c-feaf-4db6-96f3-70fd645acc77",
+  "configuration": {
+    "format": "csv",
+    "provider": {
+      "storage": "HTTPS",
+      "user_agent": false
+    },
+    "url": "https://raw.githubusercontent.com/AhmedElAbeed/atb_bi_project/main/data/raw/currency.csv",
+    "dataset_name": "ODS_CURRENCY",
+    "reader_options": "{   \"sep\": \"|\",   \"header\": 0,   \"dtype\": {     \"CURRENCY_CODE\": \"string\",     \"NUMERIC_CCY_CODE\": \"int64\",     \"CCY_NAME\": \"string\",     \"NO_OF_DECIMALS\": \"int64\"   } }"
+  }
+},
+
+{
+  "name": "CUSTOMER source",
+  "workspaceId": "524f3fec-4d3d-4ed4-b4a3-93243c05cbc4",
+  "definitionId": "778daa7c-feaf-4db6-96f3-70fd645acc77",
+  "configuration": {
+    "format": "csv",
+    "provider": {
+      "storage": "HTTPS",
+      "user_agent": false
+    },
+    "url": "https://raw.githubusercontent.com/AhmedElAbeed/atb_bi_project/main/data/raw/customer.csv",
+    "dataset_name": "ODS_CUSTOMER",
+    "reader_options": "{   \"sep\": \"|\",   \"header\": 0,   \"dtype\": {     \"CUSTOMER_CODE\": \"string\",     \"SECTOR\": \"string\",     \"ACCOUNT_OFFICER\": \"string\",     \"INDUSTRY\": \"string\",     \"TARGET\": \"string\",     \"NATIONALITY\": \"string\",     \"RESIDENCE\": \"string\",     \"LEGAL_DOC_NAME\": \"string\",     \"POSTING_RESTRICT_46\": \"string\",     \"CUSTOMER_SINCE\": \"string\",     \"TITLE\": \"string\",     \"GENDER\": \"string\",     \"MARITAL_STATUS\": \"string\",     \"NO_OF_DEPENDENTS\": \"string\",     \"EMPLOYMENT_STATUS\": \"string\",     \"OCCUPATION\": \"string\",     \"JOB_TITLE\": \"string\",     \"EMPLOYMENT_START\": \"string\",     \"SALARY\": \"float\",     \"RESIDENCE_STATUS\": \"string\",     \"LAST_KYC_REVIEW_DATE\": \"string\",     \"AUTO_NEXT_KYC_REVIEW_DATE\": \"string\",     \"KYC_COMPLETE\": \"string\",     \"SEGMENT\": \"string\",     \"L_NATURE_CLIENT\": \"string\",     \"L_CAPACITE_JUR\": \"string\",     \"L_BENF_REEL_CPT\": \"string\",     \"L_PUBLI_DATE\": \"string\",     \"L_CHIFFRE_AFF\": \"string\",     \"L_ANN_CHIFF_AFF\": \"string\",     \"L_PEP\": \"string\",     \"L_SCORE_KYC\": \"string\",     \"L_FLAG_CONF\": \"string\",     \"L_DECS_CONF\": \"string\"   } }"
+  }
+},
+{
+  "name": "DAO source",
+  "workspaceId": "524f3fec-4d3d-4ed4-b4a3-93243c05cbc4",
+  "definitionId": "778daa7c-feaf-4db6-96f3-70fd645acc77",
+  "configuration": {
+    "format": "csv",
+    "provider": {
+      "storage": "HTTPS",
+      "user_agent": false
+    },
+    "url": "https://raw.githubusercontent.com/AhmedElAbeed/atb_bi_project/main/data/raw/dao.csv",
+    "dataset_name": "ODS_DAO",
+    "reader_options": "{   \"sep\": \"|\",   \"header\": 0,   \"dtype\": {     \"ACCOUNT_OFFICER\": \"string\",     \"AREA\": \"string\",     \"NAME\": \"string\",     \"DEPT_PARENT\": \"string\"   } }"
+  }
+},
+{
+  "name": "INDUSTRY source",
+  "workspaceId": "524f3fec-4d3d-4ed4-b4a3-93243c05cbc4",
+  "definitionId": "778daa7c-feaf-4db6-96f3-70fd645acc77",
+  "configuration": {
+    "format": "csv",
+    "provider": {
+      "storage": "HTTPS",
+      "user_agent": false
+    },
+    "url": "https://raw.githubusercontent.com/AhmedElAbeed/atb_bi_project/main/data/raw/industry.csv",
+    "dataset_name": "ODS_INDUSTRY",
+    "reader_options": "{   \"sep\": \"|\",   \"header\": 0,   \"dtype\": {     \"INDUSTRY_CODE\": \"string\",     \"DESCRIPTION\": \"string\"   } }"
+  }
+},
+{
+  "name": "Sector source",
+  "workspaceId": "524f3fec-4d3d-4ed4-b4a3-93243c05cbc4",
+  "definitionId": "778daa7c-feaf-4db6-96f3-70fd645acc77",
+  "configuration": {
+    "format": "csv",
+    "provider": {
+      "storage": "HTTPS",
+      "user_agent": false
+    },
+    "url": "https://raw.githubusercontent.com/AhmedElAbeed/atb_bi_project/main/data/raw/sector.csv",
+    "dataset_name": "ODS_SECTOR",
+    "reader_options": "{   \"sep\": \"|\",   \"header\": 0,   \"dtype\": {     \"SECTOR_CODE\": \"string\",     \"DESCRIPTION\": \"string\"   } }"
+  }
+},
+{
+  "name": "TARGET source",
+  "workspaceId": "524f3fec-4d3d-4ed4-b4a3-93243c05cbc4",
+  "definitionId": "778daa7c-feaf-4db6-96f3-70fd645acc77",
+  "configuration": {
+    "format": "csv",
+    "provider": {
+      "storage": "HTTPS",
+      "user_agent": false
+    },
+    "url": "https://raw.githubusercontent.com/AhmedElAbeed/atb_bi_project/main/data/raw/target.csv",
+    "dataset_name": "ODS_TARGET",
+    "reader_options": "{   \"sep\": \"|\",   \"header\": 0,   \"dtype\": {     \"TARGET_CODE\": \"string\",     \"DESCRIPTION\": \"string\"   } }"
+  }
+}
+
+
+]
