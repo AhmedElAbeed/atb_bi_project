@@ -1,0 +1,36 @@
+name: 'atb_bi_transformation'
+version: '1.0.0'
+config-version: 2
+
+profile: 'atb_bi_transformation'
+
+require-dbt-version: [">=1.9.0", "<2.0.0"]
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  raw_database: "ATB_BI"
+  raw_schema: "PFE_ODS"
+
+quoting:
+  database: false
+  schema: false
+  identifier: false
+
+models:
+  atb_bi_transformation:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    warehouse:
+      +materialized: table

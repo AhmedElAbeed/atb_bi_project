@@ -1,0 +1,15 @@
+atb_bi_transformation:
+  target: dev
+  outputs:
+    dev:
+      type: sqlserver
+      driver: "ODBC Driver 17 for SQL Server"
+      server: "DESKTOP-B0PDEI7"
+      port: 1434
+      database: "ATB_BI"
+      schema: "PFE_DWH"
+      user: "airbyte_user"
+      password: "AZERTY123"
+      encrypt: false
+      trust_cert: true
+      threads: 4

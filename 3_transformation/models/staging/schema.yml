@@ -1,0 +1,92 @@
+version: 2
+
+sources:
+  - name: ods
+    database: "{{ var('raw_database') }}"
+    schema: "{{ var('raw_schema') }}"
+    tables:
+      - name: ODS_ACCOUNT
+      - name: ODS_CUSTOMER
+      - name: ODS_CURRENCY
+      - name: ODS_DAO
+      - name: ODS_INDUSTRY
+      - name: ODS_SECTOR
+      - name: ODS_TARGET
+
+models:
+  - name: stg_account
+    description: "Cleaned account-level records from ODS_ACCOUNT."
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        tests:
+          - not_null
+
+  - name: stg_customer
+    description: "Cleaned customer-level records from ODS_CUSTOMER with typed KYC and profile attributes."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: sector_code
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_sector')
+                field: sector_code
+      - name: industry_code
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_industry')
+                field: industry_code
+      - name: target_code
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_target')
+                field: target_code
+
+  - name: stg_currency
+    description: "Reference currency dictionary from ODS_CURRENCY."
+    columns:
+      - name: currency_code
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_dao
+    description: "Reference mapping for account officers and organizational area."
+    columns:
+      - name: account_officer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_industry
+    description: "Reference industry code dictionary."
+    columns:
+      - name: industry_code
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_sector
+    description: "Reference sector code dictionary."
+    columns:
+      - name: sector_code
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_target
+    description: "Reference target segment dictionary."
+    columns:
+      - name: target_code
+        tests:
+          - not_null
+          - unique
