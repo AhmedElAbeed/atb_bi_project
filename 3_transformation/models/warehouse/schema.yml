@@ -1,0 +1,140 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: "Customer dimension enriched with profile and compliance attributes."
+    columns:
+      - name: customer_sk
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_dao
+    description: "Dimension for account officer and organization context."
+    columns:
+      - name: dao_sk
+        tests:
+          - not_null
+          - unique
+      - name: account_officer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_currency
+    description: "Currency dimension."
+    columns:
+      - name: currency_sk
+        tests:
+          - not_null
+          - unique
+      - name: currency_code
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_sector
+    description: "Sector dimension."
+    columns:
+      - name: sector_sk
+        tests:
+          - not_null
+          - unique
+      - name: sector_code
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_industry
+    description: "Industry dimension."
+    columns:
+      - name: industry_sk
+        tests:
+          - not_null
+          - unique
+      - name: industry_code
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_target
+    description: "Target segment dimension."
+    columns:
+      - name: target_sk
+        tests:
+          - not_null
+          - unique
+      - name: target_code
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_risk_profile
+    description: "Customer risk profile dimension by scoring date."
+    columns:
+      - name: risk_profile_sk
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        tests:
+          - not_null
+
+  - name: fact_account
+    description: "Account fact table with balances and conformed dimension keys."
+    columns:
+      - name: fact_account_sk
+        tests:
+          - not_null
+          - unique
+      - name: account_id
+        tests:
+          - not_null
+          - unique
+      - name: customer_sk
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_sk
+      - name: dao_sk
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_dao')
+                field: dao_sk
+      - name: currency_sk
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_currency')
+                field: currency_sk
+
+  - name: fact_customer_risk
+    description: "Risk fact table combining score outputs and conformed dimension keys."
+    columns:
+      - name: fact_customer_risk_sk
+        tests:
+          - not_null
+          - unique
+      - name: customer_sk
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_sk
+      - name: risk_profile_sk
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_risk_profile')
+                field: risk_profile_sk
+      - name: risk_tier
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH']
