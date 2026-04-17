@@ -57,6 +57,10 @@ select
     upper(nullif(ltrim(rtrim(residence)), '')) as residence_country_code,
     nullif(ltrim(rtrim(legal_doc_name)), '') as legal_document_type,
     nullif(ltrim(rtrim(posting_restrict_46)), '') as posting_restriction_code,
+    case
+        when nullif(ltrim(rtrim(posting_restrict_46)), '') is not null then cast(1 as bit)
+        else cast(0 as bit)
+    end as has_posting_restriction,
     try_convert(date, nullif(ltrim(rtrim(customer_since)), ''), 112) as customer_since_date,
     upper(nullif(ltrim(rtrim(title)), '')) as title,
     upper(nullif(ltrim(rtrim(gender)), '')) as gender,

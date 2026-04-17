@@ -24,6 +24,12 @@ models:
       - name: customer_id
         tests:
           - not_null
+      - name: is_zero_balance
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
 
   - name: stg_customer
     description: "Cleaned customer-level records from ODS_CUSTOMER with typed KYC and profile attributes."
@@ -32,6 +38,12 @@ models:
         tests:
           - not_null
           - unique
+      - name: has_posting_restriction
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
       - name: sector_code
         tests:
           - relationships:
@@ -96,3 +108,17 @@ models:
         tests:
           - not_null
           - unique
+
+  - name: audit_invalid_customer_industry
+    description: "Customers carrying an industry_code not present in stg_industry."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+
+  - name: audit_invalid_customer_target
+    description: "Customers carrying a target_code not present in stg_target."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null

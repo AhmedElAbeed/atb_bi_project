@@ -27,6 +27,10 @@ select
     upper(nullif(ltrim(rtrim(currency)), '')) as currency_code,
     try_cast(nullif(ltrim(rtrim(account_officer)), '') as int) as account_officer_id,
     try_cast(working_balance as decimal(18, 2)) as working_balance,
+    case
+        when try_cast(working_balance as decimal(18, 2)) = 0 then cast(1 as bit)
+        else cast(0 as bit)
+    end as is_zero_balance,
     try_convert(date, nullif(ltrim(rtrim(opening_date)), ''), 112) as opening_date,
     try_cast(_airbyte_raw_id as varchar(255)) as source_record_id,
     dateadd(second, try_cast(_airbyte_extracted_at / 1000 as bigint), '1970-01-01') as extracted_at_utc
