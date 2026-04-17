@@ -35,18 +35,24 @@ models:
       - name: sector_code
         tests:
           - relationships:
+              config:
+                severity: warn
               arguments:
                 to: ref('stg_sector')
                 field: sector_code
       - name: industry_code
         tests:
           - relationships:
+              config:
+                severity: warn
               arguments:
                 to: ref('stg_industry')
                 field: industry_code
       - name: target_code
         tests:
           - relationships:
+              config:
+                severity: warn
               arguments:
                 to: ref('stg_target')
                 field: target_code

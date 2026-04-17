@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: int_account_enriched
+    description: "Enriched account grain model with customer, branch, and currency attributes."
+    columns:
+      - name: account_id
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        tests:
+          - not_null
+
+  - name: int_customer_enriched
+    description: "Enriched customer grain model with descriptive and KYC context attributes."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: int_customer_account_activity
+    description: "Customer-level account activity aggregation used for risk scoring."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+
+  - name: int_customer_risk_score
+    description: "Customer-level risk scoring model combining compliance, fragility, and behavior."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: risk_tier
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH']

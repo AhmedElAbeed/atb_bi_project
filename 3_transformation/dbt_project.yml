@@ -29,7 +29,7 @@ quoting:
 models:
   atb_bi_transformation:
     staging:
-      +materialized: view
+      +materialized: table
     intermediate:
       +materialized: view
     warehouse:
