@@ -32,5 +32,3 @@ models:
       +materialized: table
     intermediate:
       +materialized: view
-    warehouse:
-      +materialized: table
