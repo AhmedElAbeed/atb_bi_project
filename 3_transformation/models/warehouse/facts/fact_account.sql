@@ -25,6 +25,10 @@ dim_industry as (
 dim_target as (
     select target_sk, target_code
     from {{ ref('dim_target') }}
+),
+dim_date as (
+    select date_sk, full_date
+    from {{ ref('dim_date') }}
 )
 select
     row_number() over (order by a.account_id) as fact_account_sk,
@@ -35,6 +39,8 @@ select
     s.sector_sk,
     i.industry_sk,
     t.target_sk,
+    dd_open.date_sk as opening_date_sk,
+    dd_load.date_sk as load_date_sk,
     a.customer_id,
     a.account_officer_id,
     a.currency_code,
@@ -62,3 +68,7 @@ left join dim_industry i
     on a.industry_code = i.industry_code
 left join dim_target t
     on a.target_code = t.target_code
+left join dim_date dd_open
+    on a.opening_date = dd_open.full_date
+left join dim_date dd_load
+    on cast(getdate() as date) = dd_load.full_date
