@@ -1,6 +1,6 @@
 with customers as (
     select *
-    from {{ ref('stg_customer') }}
+    from {{ ref('stg_customer_resolved') }}
 ),
 sector as (
     select
@@ -32,10 +32,14 @@ select
     c.customer_id,
     c.sector_code,
     s.sector_description,
-    c.industry_code,
+    c.industry_code_resolved as industry_code,
     i.industry_description,
-    c.target_code,
+    c.target_code_resolved as target_code,
     t.target_description,
+    c.industry_code_raw,
+    c.target_code_raw,
+    c.is_industry_code_remapped,
+    c.is_target_code_remapped,
     c.account_officer_id,
     d.dao_name,
     d.dao_area,
@@ -73,8 +77,8 @@ from customers c
 left join sector s
     on c.sector_code = s.sector_code
 left join industry i
-    on c.industry_code = i.industry_code
+    on c.industry_code_resolved = i.industry_code
 left join target t
-    on c.target_code = t.target_code
+    on c.target_code_resolved = t.target_code
 left join dao d
     on c.account_officer_id = d.account_officer_id

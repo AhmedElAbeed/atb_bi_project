@@ -6,9 +6,9 @@ customers as (
     select
         customer_id,
         sector_code,
-        industry_code,
-        target_code
-    from {{ ref('stg_customer') }}
+        industry_code_resolved as industry_code,
+        target_code_resolved as target_code
+    from {{ ref('stg_customer_resolved') }}
 ),
 dao as (
     select

@@ -69,6 +69,38 @@ models:
                 to: ref('stg_target')
                 field: target_code
 
+  - name: stg_customer_resolved
+    description: "Customer staging model with remediated reference codes for safe downstream joins."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: industry_code_resolved
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_industry')
+                field: industry_code
+      - name: target_code_resolved
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_target')
+                field: target_code
+      - name: is_industry_code_remapped
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: is_target_code_remapped
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
   - name: stg_currency
     description: "Reference currency dictionary from ODS_CURRENCY."
     columns:
