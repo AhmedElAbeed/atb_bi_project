@@ -26,3 +26,5 @@ select
     dateadd(second, try_cast(_airbyte_extracted_at / 1000 as bigint), '1970-01-01') as extracted_at_utc
 from ranked
 where rn = 1
+  and nullif(ltrim(rtrim(currency_code)), '') is not null
+  and upper(nullif(ltrim(rtrim(currency_code)), '')) <> 'UNK'

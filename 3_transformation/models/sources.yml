@@ -1,0 +1,49 @@
+version: 2
+
+sources:
+  - name: ods
+    description: "Raw ODS tables from Airbyte"
+    database: "{{ var('raw_database') }}"
+    schema: "{{ var('raw_schema') }}"
+    tables:
+      - name: ODS_ACCOUNT
+        description: "Raw account data"
+        columns:
+          - name: recid
+            tests: [not_null]
+      
+      - name: ODS_CUSTOMER
+        description: "Raw customer data"
+        columns:
+          - name: customer_code
+            tests: [not_null]
+      
+      - name: ODS_CURRENCY
+        description: "Raw currency reference"
+        columns:
+          - name: currency_code
+            tests: [not_null]
+      
+      - name: ODS_DAO
+        description: "Raw DAO (Decision-Making Authority Officer) data"
+        columns:
+          - name: recid
+            tests: [not_null]
+      
+      - name: ODS_SECTOR
+        description: "Raw sector reference"
+        columns:
+          - name: sector_code
+            tests: [not_null]
+      
+      - name: ODS_INDUSTRY
+        description: "Raw industry reference"
+        columns:
+          - name: industry_code
+            tests: [not_null]
+      
+      - name: ODS_TARGET
+        description: "Raw target reference"
+        columns:
+          - name: target_code
+            tests: [not_null]

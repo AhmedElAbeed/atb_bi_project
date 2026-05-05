@@ -20,17 +20,28 @@ clean-targets:
 vars:
   raw_database: "ATB_BI"
   raw_schema: "PFE_ODS"
+  dwh_schema: "PFE_DWH"
+  ml_schema: "PFE_ML"
 
 quoting:
-  database: false
-  schema: false
+  database: true
+  schema: true
   identifier: false
 
 models:
   atb_bi_transformation:
     staging:
       +materialized: table
+    
     intermediate:
       +materialized: view
+      +schema: "PFE_INTERMEDIATE"
+    
     warehouse:
       +materialized: table
+      
+      dimensions:
+        +tags: ["dimension"]
+      
+      facts:
+        +tags: ["fact"]

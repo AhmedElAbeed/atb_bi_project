@@ -61,48 +61,56 @@ select
         when nullif(ltrim(rtrim(posting_restrict_46)), '') is not null then cast(1 as bit)
         else cast(0 as bit)
     end as has_posting_restriction,
-    try_convert(date, nullif(ltrim(rtrim(customer_since)), ''), 112) as customer_since_date,
+    coalesce(try_convert(date, nullif(ltrim(rtrim(customer_since)), ''), 112), cast('1900-01-01' as date)) as customer_since_date,
+    cast(
+        case
+            when try_convert(date, nullif(ltrim(rtrim(customer_since)), ''), 112) is null then 1
+            else 0
+        end as bit
+    ) as is_customer_since_defaulted,
     upper(nullif(ltrim(rtrim(title)), '')) as title,
     upper(nullif(ltrim(rtrim(gender)), '')) as gender,
     upper(nullif(ltrim(rtrim(marital_status)), '')) as marital_status,
-    try_cast(nullif(ltrim(rtrim(no_of_dependents)), '') as int) as number_of_dependents,
+    coalesce(try_cast(nullif(ltrim(rtrim(no_of_dependents)), '') as int), 0) as number_of_dependents,
     upper(nullif(ltrim(rtrim(employment_status)), '')) as employment_status,
     nullif(ltrim(rtrim(occupation)), '') as occupation_code,
     nullif(ltrim(rtrim(job_title)), '') as job_title,
     try_convert(date, nullif(ltrim(rtrim(employment_start)), ''), 112) as employment_start_date,
-    try_cast(salary as decimal(18, 2)) as monthly_salary,
+    coalesce(try_cast(salary as decimal(18, 2)), 0.00) as monthly_salary,
     upper(nullif(ltrim(rtrim(residence_status)), '')) as residence_status,
     try_convert(date, nullif(ltrim(rtrim(last_kyc_review_date)), ''), 112) as last_kyc_review_date,
     try_convert(date, nullif(ltrim(rtrim(auto_next_kyc_review_date)), ''), 112) as next_kyc_review_date,
     case
         when upper(nullif(ltrim(rtrim(kyc_complete)), '')) in ('OUI', 'YES', 'Y', '1', 'TRUE') then cast(1 as bit)
         when upper(nullif(ltrim(rtrim(kyc_complete)), '')) in ('NON', 'NO', 'N', '0', 'FALSE') then cast(0 as bit)
-        else null
+        else cast(0 as bit)
     end as is_kyc_complete,
     try_cast(nullif(ltrim(rtrim(segment)), '') as int) as segment_code,
     upper(nullif(ltrim(rtrim(l_nature_client)), '')) as client_nature_code,
     upper(nullif(ltrim(rtrim(l_capacite_jur)), '')) as legal_capacity_flag,
     upper(nullif(ltrim(rtrim(l_benf_reel_cpt)), '')) as beneficial_owner_flag,
     try_convert(date, nullif(ltrim(rtrim(l_publi_date)), ''), 112) as publication_date,
-    try_cast(nullif(ltrim(rtrim(l_chiffre_aff)), '') as decimal(18, 2)) as turnover_amount,
+    coalesce(try_cast(nullif(ltrim(rtrim(l_chiffre_aff)), '') as decimal(18, 2)), 0.00) as turnover_amount,
     try_cast(nullif(ltrim(rtrim(l_ann_chiff_aff)), '') as int) as turnover_year,
     case
         when upper(nullif(ltrim(rtrim(l_pep)), '')) in ('OUI', 'YES', 'Y', '1', 'TRUE') then cast(1 as bit)
         when upper(nullif(ltrim(rtrim(l_pep)), '')) in ('NON', 'NO', 'N', '0', 'FALSE') then cast(0 as bit)
-        else null
+        else cast(0 as bit)
     end as is_pep,
     nullif(ltrim(rtrim(l_score_kyc)), '') as kyc_score,
     case
         when upper(nullif(ltrim(rtrim(l_flag_conf)), '')) in ('OUI', 'YES', 'Y', '1', 'TRUE') then cast(1 as bit)
         when upper(nullif(ltrim(rtrim(l_flag_conf)), '')) in ('NON', 'NO', 'N', '0', 'FALSE') then cast(0 as bit)
-        else null
+        else cast(0 as bit)
     end as is_compliance_flagged,
     case
         when upper(nullif(ltrim(rtrim(l_decs_conf)), '')) in ('OUI', 'YES', 'Y', '1', 'TRUE') then cast(1 as bit)
         when upper(nullif(ltrim(rtrim(l_decs_conf)), '')) in ('NON', 'NO', 'N', '0', 'FALSE') then cast(0 as bit)
-        else null
+        else cast(0 as bit)
     end as has_compliance_decision,
     try_cast(_airbyte_raw_id as varchar(255)) as source_record_id,
     dateadd(second, try_cast(_airbyte_extracted_at / 1000 as bigint), '1970-01-01') as extracted_at_utc
 from ranked
 where rn = 1
+  and nullif(ltrim(rtrim(customer_code)), '') is not null
+  and try_cast(nullif(ltrim(rtrim(customer_code)), '') as bigint) is not null

@@ -13,3 +13,20 @@ atb_bi_transformation:
       encrypt: false
       trust_cert: true
       threads: 4
+      timeout_seconds: 300
+      retries: 1
+
+    prod:
+      type: sqlserver
+      driver: "{{ env_var('DBT_DRIVER', 'ODBC Driver 17 for SQL Server') }}"
+      server: "{{ env_var('DBT_SERVER', 'host.docker.internal') }}"
+      port: "{{ env_var('DBT_PORT', '1434') | int }}"
+      database: "{{ env_var('DBT_DATABASE', 'ATB_BI') }}"
+      schema: "{{ env_var('DBT_SCHEMA', 'PFE_DWH') }}"
+      user: "{{ env_var('DBT_USER', 'airbyte_user') }}"
+      password: "{{ env_var('DBT_PASSWORD', 'AZERTY123') }}"
+      encrypt: "{{ env_var('DBT_ENCRYPT', 'false') | as_bool }}"
+      trust_cert: "{{ env_var('DBT_TRUST_CERT', 'true') | as_bool }}"
+      threads: "{{ env_var('DBT_THREADS_PROD', '8') | int }}"
+      timeout_seconds: "{{ env_var('DBT_TIMEOUT_SECONDS', '300') | int }}"
+      retries: "{{ env_var('DBT_RETRIES_PROD', '3') | int }}"

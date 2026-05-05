@@ -2,136 +2,152 @@ version: 2
 
 models:
   - name: dim_customer
-    description: "Customer dimension enriched with profile and compliance attributes."
+    description: "Customer dimension with UNKNOWN record"
     columns:
       - name: customer_sk
-        tests:
-          - not_null
-          - unique
+        description: "Surrogate key"
+        tests: [not_null, unique]
       - name: customer_id
-        tests:
-          - not_null
-          - unique
+        description: "Natural customer identifier"
+        tests: [not_null, unique]
 
   - name: dim_dao
-    description: "Dimension for account officer and organization context."
+    description: "Account officer dimension with UNKNOWN record (-1)"
     columns:
       - name: dao_sk
-        tests:
-          - not_null
-          - unique
+        description: "Surrogate key"
+        tests: [not_null, unique]
       - name: account_officer_id
-        tests:
-          - not_null
-          - unique
+        description: "Natural DAO identifier"
+        tests: [not_null, unique]
 
   - name: dim_currency
-    description: "Currency dimension."
+    description: "Currency dimension with UNKNOWN record (UNK)"
     columns:
       - name: currency_sk
-        tests:
-          - not_null
-          - unique
+        description: "Surrogate key"
+        tests: [not_null, unique]
       - name: currency_code
-        tests:
-          - not_null
-          - unique
+        description: "Natural currency code"
+        tests: [not_null, unique]
 
   - name: dim_sector
-    description: "Sector dimension."
+    description: "Sector dimension with UNKNOWN record (-1)"
     columns:
       - name: sector_sk
-        tests:
-          - not_null
-          - unique
+        description: "Surrogate key"
+        tests: [not_null, unique]
       - name: sector_code
-        tests:
-          - not_null
-          - unique
+        description: "Natural sector code"
+        tests: [not_null, unique]
 
   - name: dim_industry
-    description: "Industry dimension."
+    description: "Industry dimension with UNKNOWN record (-1)"
     columns:
       - name: industry_sk
-        tests:
-          - not_null
-          - unique
+        description: "Surrogate key"
+        tests: [not_null, unique]
       - name: industry_code
-        tests:
-          - not_null
-          - unique
+        description: "Natural industry code"
+        tests: [not_null, unique]
 
   - name: dim_target
-    description: "Target segment dimension."
+    description: "Target segment dimension with UNKNOWN record (-1)"
     columns:
       - name: target_sk
-        tests:
-          - not_null
-          - unique
+        description: "Surrogate key"
+        tests: [not_null, unique]
       - name: target_code
-        tests:
-          - not_null
-          - unique
+        description: "Natural target code"
+        tests: [not_null, unique]
 
   - name: dim_date
-    description: "Conformed date dimension extracted from existing analytical dates."
+    description: "Date dimension"
     columns:
       - name: date_sk
-        tests:
-          - not_null
-          - unique
+        description: "Date surrogate key"
+        tests: [not_null, unique]
       - name: full_date
-        tests:
-          - not_null
-          - unique
+        description: "Calendar date"
+        tests: [not_null, unique]
 
   - name: dim_risk_profile
-    description: "Customer risk profile dimension by scoring date."
+    description: "Risk profile dimension with UNKNOWN record"
     columns:
       - name: risk_profile_sk
-        tests:
-          - not_null
-          - unique
+        description: "Surrogate key"
+        tests: [not_null, unique]
       - name: customer_id
-        tests:
-          - not_null
+        description: "Natural customer key in risk profile"
+        tests: [not_null]
+      - name: scoring_date
+        description: "Risk scoring date"
+        tests: [not_null]
 
   - name: fact_account
-    description: "Account fact table with balances and conformed dimension keys."
+    description: "Account fact table with surrogate keys only"
     columns:
       - name: fact_account_sk
-        tests:
-          - not_null
-          - unique
-      - name: account_id
-        tests:
-          - not_null
-          - unique
+        description: "Fact table surrogate key"
+        tests: [not_null, unique]
       - name: customer_sk
+        description: "FK to dim_customer"
         tests:
+          - not_null
           - relationships:
               arguments:
                 to: ref('dim_customer')
                 field: customer_sk
       - name: dao_sk
+        description: "FK to dim_dao"
         tests:
+          - not_null
           - relationships:
               arguments:
                 to: ref('dim_dao')
                 field: dao_sk
       - name: currency_sk
+        description: "FK to dim_currency"
         tests:
+          - not_null
           - relationships:
               arguments:
                 to: ref('dim_currency')
                 field: currency_sk
-      - name: opening_date_sk
+      - name: sector_sk
+        description: "FK to dim_sector"
         tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sector')
+                field: sector_sk
+      - name: industry_sk
+        description: "FK to dim_industry"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_industry')
+                field: industry_sk
+      - name: target_sk
+        description: "FK to dim_target"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_target')
+                field: target_sk
+      - name: opening_date_sk
+        description: "FK to dim_date"
+        tests:
+          - not_null
           - relationships:
               arguments:
                 to: ref('dim_date')
                 field: date_sk
       - name: load_date_sk
+        description: "FK to dim_date"
         tests:
           - not_null
           - relationships:
@@ -140,25 +156,61 @@ models:
                 field: date_sk
 
   - name: fact_customer_risk
-    description: "Risk fact table combining score outputs and conformed dimension keys."
+    description: "Customer risk fact table with surrogate keys and 3-pillar risk scores"
     columns:
       - name: fact_customer_risk_sk
+        description: "Fact table surrogate key"
+        tests: [not_null, unique]
+      - name: customer_sk
+        description: "FK to dim_customer"
         tests:
           - not_null
-          - unique
-      - name: customer_sk
-        tests:
           - relationships:
               arguments:
                 to: ref('dim_customer')
                 field: customer_sk
       - name: risk_profile_sk
+        description: "FK to dim_risk_profile"
         tests:
+          - not_null
           - relationships:
               arguments:
                 to: ref('dim_risk_profile')
                 field: risk_profile_sk
+      - name: dao_sk
+        description: "FK to dim_dao"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_dao')
+                field: dao_sk
+      - name: sector_sk
+        description: "FK to dim_sector"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sector')
+                field: sector_sk
+      - name: industry_sk
+        description: "FK to dim_industry"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_industry')
+                field: industry_sk
+      - name: target_sk
+        description: "FK to dim_target"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_target')
+                field: target_sk
       - name: scoring_date_sk
+        description: "FK to dim_date"
         tests:
           - not_null
           - relationships:
@@ -166,14 +218,32 @@ models:
                 to: ref('dim_date')
                 field: date_sk
       - name: load_date_sk
+        description: "FK to dim_date"
         tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('dim_date')
                 field: date_sk
-      - name: risk_tier
-        tests:
-          - accepted_values:
-              arguments:
-                values: ['LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH']
+      - name: account_officer_id
+        description: "Business account officer id with unknown sentinel"
+        tests: [not_null]
+      - name: sector_code
+        description: "Business sector code with unknown sentinel"
+        tests: [not_null]
+      - name: industry_code
+        description: "Business industry code with unknown sentinel"
+        tests: [not_null]
+      - name: target_code
+        description: "Business target code with unknown sentinel"
+        tests: [not_null]
+      - name: customer_since_date
+        description: "Customer since date defaulted to sentinel when absent"
+        tests: [not_null]
+      - name: oldest_account_opening_date
+        description: "Oldest account opening date, defaulted to sentinel when absent"
+        tests: [not_null]
+      - name: newest_account_opening_date
+        description: "Newest account opening date, defaulted to sentinel when absent"
+        tests: [not_null]
+

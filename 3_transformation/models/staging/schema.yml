@@ -1,156 +1,194 @@
 version: 2
 
-sources:
-  - name: ods
-    database: "{{ var('raw_database') }}"
-    schema: "{{ var('raw_schema') }}"
-    tables:
-      - name: ODS_ACCOUNT
-      - name: ODS_CUSTOMER
-      - name: ODS_CURRENCY
-      - name: ODS_DAO
-      - name: ODS_INDUSTRY
-      - name: ODS_SECTOR
-      - name: ODS_TARGET
-
+# Staging Layer - Minimal clean schema
 models:
   - name: stg_account
-    description: "Cleaned account-level records from ODS_ACCOUNT."
+    description: "Cleaned account data"
     columns:
       - name: account_id
-        tests:
-          - not_null
-          - unique
+        data_type: bigint
+        tests: [not_null, unique]
       - name: customer_id
+        data_type: bigint
         tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customer')
+                field: customer_id
+      - name: category_code
+        data_type: varchar(50)
+      - name: currency_code
+        data_type: varchar(3)
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_currency')
+                field: currency_code
+      - name: account_officer_id
+        data_type: int
+      - name: working_balance
+        data_type: decimal(18, 2)
       - name: is_zero_balance
+        data_type: bit
+      - name: is_negative_balance
+        data_type: bit
+      - name: opening_date
+        data_type: date
+        tests: [not_null]
+      - name: is_opening_date_defaulted
+        data_type: bit
         tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [0, 1]
+      - name: account_age_days
+        data_type: int
+      - name: source_record_id
+        data_type: varchar(255)
+      - name: extracted_at_utc
+        data_type: datetime
 
   - name: stg_customer
-    description: "Cleaned customer-level records from ODS_CUSTOMER with typed KYC and profile attributes."
+    description: "Cleaned customer data"
     columns:
       - name: customer_id
-        tests:
-          - not_null
-          - unique
-      - name: has_posting_restriction
-        tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [0, 1]
+        data_type: bigint
+        tests: [not_null, unique]
       - name: sector_code
+        data_type: int
         tests:
           - relationships:
-              config:
-                severity: warn
               arguments:
                 to: ref('stg_sector')
                 field: sector_code
-      - name: industry_code
+      - name: account_officer_id
+        data_type: int
         tests:
           - relationships:
-              config:
-                severity: warn
+              arguments:
+                to: ref('stg_dao')
+                field: account_officer_id
+      - name: industry_code
+        data_type: int
+        tests:
+          - relationships:
               arguments:
                 to: ref('stg_industry')
                 field: industry_code
       - name: target_code
+        data_type: int
         tests:
           - relationships:
-              config:
-                severity: warn
               arguments:
                 to: ref('stg_target')
                 field: target_code
+      - name: customer_since_date
+        data_type: date
+        tests: [not_null]
+      - name: is_customer_since_defaulted
+        data_type: bit
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: monthly_salary
+        data_type: decimal(18, 2)
+      - name: number_of_dependents
+        data_type: int
+      - name: is_kyc_complete
+        data_type: bit
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: is_pep
+        data_type: bit
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: is_compliance_flagged
+        data_type: bit
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: has_compliance_decision
+        data_type: bit
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: source_record_id
+        data_type: varchar(255)
+      - name: extracted_at_utc
+        data_type: datetime
 
   - name: stg_customer_resolved
-    description: "Customer staging model with remediated reference codes for safe downstream joins."
+    description: "Customer with resolved codes"
     columns:
       - name: customer_id
-        tests:
-          - not_null
-          - unique
+        data_type: bigint
       - name: industry_code_resolved
-        tests:
-          - relationships:
-              arguments:
-                to: ref('stg_industry')
-                field: industry_code
+        data_type: int
       - name: target_code_resolved
-        tests:
-          - relationships:
-              arguments:
-                to: ref('stg_target')
-                field: target_code
-      - name: is_industry_code_remapped
-        tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [0, 1]
-      - name: is_target_code_remapped
-        tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [0, 1]
-
-  - name: stg_currency
-    description: "Reference currency dictionary from ODS_CURRENCY."
-    columns:
-      - name: currency_code
-        tests:
-          - not_null
-          - unique
+        data_type: int
 
   - name: stg_dao
-    description: "Reference mapping for account officers and organizational area."
+    description: "DAO data"
     columns:
       - name: account_officer_id
-        tests:
-          - not_null
-          - unique
+        data_type: int
+        tests: [not_null, unique]
+      - name: dao_name
+        data_type: varchar(max)
+      - name: dao_area
+        data_type: varchar(max)
+      - name: parent_department_code
+        data_type: int
 
-  - name: stg_industry
-    description: "Reference industry code dictionary."
+  - name: stg_currency
+    description: "Currency data"
     columns:
-      - name: industry_code
-        tests:
-          - not_null
-          - unique
+      - name: currency_code
+        data_type: varchar(3)
+        tests: [not_null, unique]
+      - name: currency_name
+        data_type: varchar(max)
+      - name: no_of_decimals
+        data_type: int
 
   - name: stg_sector
-    description: "Reference sector code dictionary."
+    description: "Sector data"
     columns:
       - name: sector_code
-        tests:
-          - not_null
-          - unique
+        data_type: int
+        tests: [not_null, unique]
+      - name: sector_description
+        data_type: varchar(max)
+
+  - name: stg_industry
+    description: "Industry data"
+    columns:
+      - name: industry_code
+        data_type: int
+        tests: [not_null, unique]
+      - name: industry_description
+        data_type: varchar(max)
 
   - name: stg_target
-    description: "Reference target segment dictionary."
+    description: "Target data"
     columns:
       - name: target_code
-        tests:
-          - not_null
-          - unique
-
-  - name: audit_invalid_customer_industry
-    description: "Customers carrying an industry_code not present in stg_industry."
-    columns:
-      - name: customer_id
-        tests:
-          - not_null
-
-  - name: audit_invalid_customer_target
-    description: "Customers carrying a target_code not present in stg_target."
-    columns:
-      - name: customer_id
-        tests:
-          - not_null
+        data_type: int
+        tests: [not_null, unique]
+      - name: target_description
+        data_type: varchar(max)

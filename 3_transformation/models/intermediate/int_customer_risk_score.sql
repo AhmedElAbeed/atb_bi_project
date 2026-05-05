@@ -1,6 +1,7 @@
 with customer_enriched as (
     select *
     from {{ ref('int_customer_enriched') }}
+    where customer_id is not null
 ),
 account_activity as (
     select *
@@ -38,6 +39,8 @@ base as (
 scored as (
     select
         *,
+        -- ═══ COMPLIANCE RISK INDEX (0–100) ═══════════════════════════════════
+        -- Handles NULL last_kyc_review_date gracefully: NULL → treated as overdue
         case
             when (
                 (case when is_kyc_complete = 0 then 35 else 0 end) +
@@ -45,7 +48,11 @@ scored as (
                 (case when is_compliance_flagged = 1 then 25 else 0 end) +
                 (case when has_compliance_decision = 1 then 10 else 0 end) +
                 (case when nullif(posting_restriction_code, '') is not null then 15 else 0 end) +
-                (case when datediff(day, last_kyc_review_date, cast(getdate() as date)) > 365 then 10 else 0 end)
+                (case
+                    when last_kyc_review_date is null then 15
+                    when datediff(day, last_kyc_review_date, cast(getdate() as date)) > 365 then 10
+                    else 0
+                end)
             ) > 100 then 100
             else (
                 (case when is_kyc_complete = 0 then 35 else 0 end) +
@@ -53,15 +60,21 @@ scored as (
                 (case when is_compliance_flagged = 1 then 25 else 0 end) +
                 (case when has_compliance_decision = 1 then 10 else 0 end) +
                 (case when nullif(posting_restriction_code, '') is not null then 15 else 0 end) +
-                (case when datediff(day, last_kyc_review_date, cast(getdate() as date)) > 365 then 10 else 0 end)
+                (case
+                    when last_kyc_review_date is null then 15
+                    when datediff(day, last_kyc_review_date, cast(getdate() as date)) > 365 then 10
+                    else 0
+                end)
             )
         end as compliance_risk_index,
+
+        -- ═══ FINANCIAL FRAGILITY SCORE (0–100) ══════════════════════════════
         case
             when (
                 (case when monthly_salary is null or monthly_salary <= 0 then 25 else 0 end) +
                 (case when account_count = 0 then 20 else 0 end) +
                 (case when total_working_balance < 0 then 30 else 0 end) +
-                (case when avg_working_balance between 0 and 500 then 10 else 0 end) +
+                (case when total_working_balance >= 0 and avg_working_balance between 0 and 500 then 10 else 0 end) +
                 (case when number_of_dependents >= 4 then 10 else 0 end) +
                 (case when upper(coalesce(employment_status, '')) in ('UNEMPLOYED', 'SANS EMPLOI', 'CHOMEUR') then 20 else 0 end)
             ) > 100 then 100
@@ -69,25 +82,36 @@ scored as (
                 (case when monthly_salary is null or monthly_salary <= 0 then 25 else 0 end) +
                 (case when account_count = 0 then 20 else 0 end) +
                 (case when total_working_balance < 0 then 30 else 0 end) +
-                (case when avg_working_balance between 0 and 500 then 10 else 0 end) +
+                (case when total_working_balance >= 0 and avg_working_balance between 0 and 500 then 10 else 0 end) +
                 (case when number_of_dependents >= 4 then 10 else 0 end) +
                 (case when upper(coalesce(employment_status, '')) in ('UNEMPLOYED', 'SANS EMPLOI', 'CHOMEUR') then 20 else 0 end)
             )
         end as financial_fragility_score,
+
+        -- ═══ BEHAVIORAL RISK SCORE (0–100) ══════════════════════════════════
+        -- Handles NULL last_kyc_review_date gracefully
         case
             when (
                 (case when customer_tenure_days < 365 then 25 else 0 end) +
                 (case when negative_balance_account_count > 0 then 25 else 0 end) +
                 (case when account_count = 1 then 10 else 0 end) +
-                (case when total_working_balance < 100 then 15 else 0 end) +
-                (case when datediff(day, last_kyc_review_date, cast(getdate() as date)) > 730 then 20 else 0 end)
+                (case when total_working_balance < 100 and account_count > 0 then 15 else 0 end) +
+                (case
+                    when last_kyc_review_date is null then 20
+                    when datediff(day, last_kyc_review_date, cast(getdate() as date)) > 730 then 20
+                    else 0
+                end)
             ) > 100 then 100
             else (
                 (case when customer_tenure_days < 365 then 25 else 0 end) +
                 (case when negative_balance_account_count > 0 then 25 else 0 end) +
                 (case when account_count = 1 then 10 else 0 end) +
-                (case when total_working_balance < 100 then 15 else 0 end) +
-                (case when datediff(day, last_kyc_review_date, cast(getdate() as date)) > 730 then 20 else 0 end)
+                (case when total_working_balance < 100 and account_count > 0 then 15 else 0 end) +
+                (case
+                    when last_kyc_review_date is null then 20
+                    when datediff(day, last_kyc_review_date, cast(getdate() as date)) > 730 then 20
+                    else 0
+                end)
             )
         end as behavioral_risk_score
     from base
@@ -109,7 +133,11 @@ select
     compliance_risk_index,
     financial_fragility_score,
     behavioral_risk_score,
-    cast(round((compliance_risk_index * 0.40) + (financial_fragility_score * 0.35) + (behavioral_risk_score * 0.25), 2) as decimal(10, 2)) as global_risk_score,
+    cast(round(
+        (compliance_risk_index * 0.40) +
+        (financial_fragility_score * 0.35) +
+        (behavioral_risk_score * 0.25),
+    2) as decimal(10, 2)) as global_risk_score,
     case
         when (compliance_risk_index * 0.40) + (financial_fragility_score * 0.35) + (behavioral_risk_score * 0.25) < 25 then 'LOW'
         when (compliance_risk_index * 0.40) + (financial_fragility_score * 0.35) + (behavioral_risk_score * 0.25) < 50 then 'MEDIUM'

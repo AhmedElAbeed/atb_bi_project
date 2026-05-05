@@ -1,14 +1,22 @@
+-- ══════════════════════════════════════════════════════════════════════════════
+-- dim_date: Date dimension
+-- Always includes today (scoring_date/load_date) and the 1900-01-01 sentinel
+-- so fact table JOINs never fail.
+-- ══════════════════════════════════════════════════════════════════════════════
 with source_dates as (
+    -- Account opening dates
     select cast(opening_date as date) as date_day
     from {{ ref('int_account_enriched') }}
 
     union all
 
+    -- Customer since dates
     select cast(customer_since_date as date) as date_day
     from {{ ref('int_customer_enriched') }}
 
     union all
 
+    -- KYC review dates
     select cast(last_kyc_review_date as date) as date_day
     from {{ ref('int_customer_enriched') }}
 
@@ -19,6 +27,7 @@ with source_dates as (
 
     union all
 
+    -- Risk scoring dates
     select cast(oldest_account_opening_date as date) as date_day
     from {{ ref('int_customer_risk_score') }}
 
@@ -34,7 +43,13 @@ with source_dates as (
 
     union all
 
+    -- Today (load date) — always present so fact JOINs succeed
     select cast(getdate() as date) as date_day
+
+    union all
+
+    -- Sentinel for UNKNOWN / default dates
+    select cast('1900-01-01' as date) as date_day
 ),
 distinct_dates as (
     select distinct date_day

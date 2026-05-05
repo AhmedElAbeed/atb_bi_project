@@ -1,3 +1,15 @@
+{{
+  config(
+    materialized='table',
+    unique_key='fact_account_sk',
+    indexes=[
+      {'columns': ['customer_sk'], 'type': 'btree'},
+      {'columns': ['opening_date_sk'], 'type': 'btree'},
+      {'columns': ['load_date_sk'], 'type': 'btree'}
+    ]
+  )
+}}
+
 with account_base as (
     select *
     from {{ ref('int_account_enriched') }}
@@ -31,8 +43,7 @@ dim_date as (
     from {{ ref('dim_date') }}
 )
 select
-    row_number() over (order by a.account_id) as fact_account_sk,
-    a.account_id,
+    cast(a.account_id as bigint) as fact_account_sk,
     c.customer_sk,
     d.dao_sk,
     cur.currency_sk,
@@ -41,34 +52,24 @@ select
     t.target_sk,
     dd_open.date_sk as opening_date_sk,
     dd_load.date_sk as load_date_sk,
-    a.customer_id,
-    a.account_officer_id,
-    a.currency_code,
-    a.sector_code,
-    a.industry_code,
-    a.target_code,
-    a.category_code,
-    a.opening_date,
-    a.account_age_days,
-    a.working_balance,
-    a.is_negative_balance,
-    a.source_record_id,
-    a.extracted_at_utc,
+    coalesce(a.working_balance, cast(0.00 as decimal(18, 2))) as working_balance,
+    coalesce(a.is_negative_balance, cast(0 as bit)) as is_negative_balance,
+    coalesce(a.account_age_days, 0) as account_age_days,
     cast(getdate() as date) as load_date
 from account_base a
-left join dim_customer c
+inner join dim_customer c
     on a.customer_id = c.customer_id
-left join dim_dao d
-    on a.account_officer_id = d.account_officer_id
-left join dim_currency cur
-    on a.currency_code = cur.currency_code
-left join dim_sector s
-    on a.sector_code = s.sector_code
-left join dim_industry i
-    on a.industry_code = i.industry_code
-left join dim_target t
-    on a.target_code = t.target_code
-left join dim_date dd_open
+inner join dim_dao d
+    on coalesce(a.account_officer_id, -1) = d.account_officer_id
+inner join dim_currency cur
+    on coalesce(a.currency_code, 'UNK') = cur.currency_code
+inner join dim_sector s
+    on coalesce(a.sector_code, -1) = s.sector_code
+inner join dim_industry i
+    on coalesce(a.industry_code, -1) = i.industry_code
+inner join dim_target t
+    on coalesce(a.target_code, -1) = t.target_code
+inner join dim_date dd_open
     on a.opening_date = dd_open.full_date
-left join dim_date dd_load
+inner join dim_date dd_load
     on cast(getdate() as date) = dd_load.full_date
