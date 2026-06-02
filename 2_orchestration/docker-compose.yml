@@ -46,8 +46,8 @@ services:
       - DBT_TIMEOUT_SECONDS=300
       - DBT_RETRIES_PROD=3
       - SQL_SERVER_HOST=host.docker.internal
-      - SQL_SERVER_PORT=1433
-      - SQL_SERVER_DATABASE=PFE
+      - SQL_SERVER_PORT=1434
+      - SQL_SERVER_DATABASE=ATB_BI
       - SQL_SERVER_DRIVER=ODBC Driver 17 for SQL Server
     volumes:
       - ./dags:/opt/airflow/dags
@@ -92,8 +92,8 @@ services:
       - DBT_RETRIES_PROD=3
       # SQL Server Connection (for dbt and Python tasks)
       - SQL_SERVER_HOST=host.docker.internal
-      - SQL_SERVER_PORT=1433
-      - SQL_SERVER_DATABASE=PFE
+      - SQL_SERVER_PORT=1434
+      - SQL_SERVER_DATABASE=ATB_BI
       - SQL_SERVER_DRIVER=ODBC Driver 17 for SQL Server
     ports:
       - "8080:8080"
@@ -137,8 +137,8 @@ services:
       - DBT_TIMEOUT_SECONDS=300
       - DBT_RETRIES_PROD=3
       - SQL_SERVER_HOST=host.docker.internal
-      - SQL_SERVER_PORT=1433
-      - SQL_SERVER_DATABASE=PFE
+      - SQL_SERVER_PORT=1434
+      - SQL_SERVER_DATABASE=ATB_BI
       - SQL_SERVER_DRIVER=ODBC Driver 17 for SQL Server
     volumes:
       - ./dags:/opt/airflow/dags

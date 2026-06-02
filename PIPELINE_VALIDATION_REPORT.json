@@ -1,0 +1,312 @@
+{
+  "timestamp": "2026-05-20T13:55:29.114165",
+  "tests": [
+    {
+      "name": "DAG Syntax: atb_bi_warehouse_etl.py",
+      "status": "PASS",
+      "message": "Warehouse ETL DAG - Python syntax valid",
+      "timestamp": "2026-05-20T13:55:29.130747",
+      "details": {
+        "file_size": 12326,
+        "lines": 339
+      }
+    },
+    {
+      "name": "DAG Syntax: atb_ml_orchestration.py",
+      "status": "PASS",
+      "message": "ML Pipeline DAG - Python syntax valid",
+      "timestamp": "2026-05-20T13:55:29.135748",
+      "details": {
+        "file_size": 28830,
+        "lines": 814
+      }
+    },
+    {
+      "name": "DAG Syntax: atb_master_ml_integration_dag.py",
+      "status": "PASS",
+      "message": "Master Integration DAG - Python syntax valid",
+      "timestamp": "2026-05-20T13:55:29.136748",
+      "details": {
+        "file_size": 2402,
+        "lines": 88
+      }
+    },
+    {
+      "name": "DAG Imports: ETL",
+      "status": "PASS",
+      "message": "All required imports present",
+      "timestamp": "2026-05-20T13:55:29.137744",
+      "details": {}
+    },
+    {
+      "name": "DAG Imports: ML",
+      "status": "PASS",
+      "message": "All required imports present",
+      "timestamp": "2026-05-20T13:55:29.137744",
+      "details": {}
+    },
+    {
+      "name": "DAG Imports: Integration",
+      "status": "PASS",
+      "message": "All required imports present",
+      "timestamp": "2026-05-20T13:55:29.137744",
+      "details": {}
+    },
+    {
+      "name": "Warehouse Config",
+      "status": "PASS",
+      "message": "Connection config loaded",
+      "timestamp": "2026-05-20T13:55:29.878781",
+      "details": {
+        "server": "localhost",
+        "database": "ATB_BI",
+        "port": "1434",
+        "schema": "PFE_DWH"
+      }
+    },
+    {
+      "name": "SQL Server Connection",
+      "status": "FAIL",
+      "message": "Database connection failed: (pyodbc.InterfaceError) ('28000', \"[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'airbyte_user'. (18456) (SQLDriverConnect); [28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'airbyte_user'. (18456)\")\n(Background on this error at: https://sqlalche.me/e/20/rvf5)",
+      "timestamp": "2026-05-20T13:55:29.923359",
+      "details": {
+        "error": "(pyodbc.InterfaceError) ('28000', \"[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'airbyte_user'. (18456) (SQLDriverConnect); [28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'airbyte_user'. (18456)\")\n(Background on this error at: https://sqlalche.me/e/20/rvf5)"
+      }
+    },
+    {
+      "name": "Warehouse Tables",
+      "status": "FAIL",
+      "message": "Table verification failed: (pyodbc.InterfaceError) ('28000', \"[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'airbyte_user'. (18456) (SQLDriverConnect); [28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'airbyte_user'. (18456)\")\n(Background on this error at: https://sqlalche.me/e/20/rvf5)",
+      "timestamp": "2026-05-20T13:55:29.931358",
+      "details": {}
+    },
+    {
+      "name": "Warehouse Data",
+      "status": "FAIL",
+      "message": "Row count check failed: (pyodbc.InterfaceError) ('28000', \"[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'airbyte_user'. (18456) (SQLDriverConnect); [28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'airbyte_user'. (18456)\")\n(Background on this error at: https://sqlalche.me/e/20/rvf5)",
+      "timestamp": "2026-05-20T13:55:29.990359",
+      "details": {}
+    },
+    {
+      "name": "Feature Loading",
+      "status": "PASS",
+      "message": "Loaded 136,676 rows \u00d7 44 columns",
+      "timestamp": "2026-05-20T13:55:30.646885",
+      "details": {
+        "rows": 136676,
+        "columns": 44,
+        "columns_list": [
+          "fact_customer_risk_sk",
+          "customer_sk",
+          "customer_id",
+          "scoring_date",
+          "load_date",
+          "customer_tenure_days",
+          "account_count",
+          "total_working_balance",
+          "avg_working_balance",
+          "negative_balance_account_count"
+        ]
+      }
+    },
+    {
+      "name": "Feature Engineering: Targets",
+      "status": "PASS",
+      "message": "Target variable created - Distribution: {0: 134864, 1: 1812}",
+      "timestamp": "2026-05-20T13:55:31.341864",
+      "details": {
+        "target_distribution": {
+          "0": 134864,
+          "1": 1812
+        }
+      }
+    },
+    {
+      "name": "Feature Engineering: Transformations",
+      "status": "PASS",
+      "message": "Engineered 57 total columns",
+      "timestamp": "2026-05-20T13:55:31.533004",
+      "details": {
+        "columns": 57
+      }
+    },
+    {
+      "name": "Feature Engineering: Selection",
+      "status": "PASS",
+      "message": "Selected 37 features (25 numeric, 12 categorical)",
+      "timestamp": "2026-05-20T13:55:31.533004",
+      "details": {
+        "total_features": 37,
+        "numeric": 25,
+        "categorical": 12
+      }
+    },
+    {
+      "name": "Artifact: customer_risk_features.csv",
+      "status": "PASS",
+      "message": "Found: C:\\Users\\Ahmed\\Desktop\\atb_bi_project\\4_ml\\outputs\\customer_risk_features.csv",
+      "timestamp": "2026-05-20T13:55:31.541038",
+      "details": {}
+    },
+    {
+      "name": "Artifact: training_summary.json",
+      "status": "PASS",
+      "message": "Found: C:\\Users\\Ahmed\\Desktop\\atb_bi_project\\4_ml\\outputs\\training_summary.json",
+      "timestamp": "2026-05-20T13:55:31.541038",
+      "details": {}
+    },
+    {
+      "name": "Artifact: model_selection_conclusion.json",
+      "status": "PASS",
+      "message": "Found: C:\\Users\\Ahmed\\Desktop\\atb_bi_project\\4_ml\\outputs\\model_selection_conclusion.json",
+      "timestamp": "2026-05-20T13:55:31.541038",
+      "details": {}
+    },
+    {
+      "name": "Directory: 1_ingestion",
+      "status": "PASS",
+      "message": "Data ingestion layer",
+      "timestamp": "2026-05-20T13:55:31.542021",
+      "details": {}
+    },
+    {
+      "name": "Directory: 2_orchestration",
+      "status": "PASS",
+      "message": "Orchestration (Airflow)",
+      "timestamp": "2026-05-20T13:55:31.542021",
+      "details": {}
+    },
+    {
+      "name": "Directory: 3_transformation",
+      "status": "PASS",
+      "message": "dbt transformation",
+      "timestamp": "2026-05-20T13:55:31.542021",
+      "details": {}
+    },
+    {
+      "name": "Directory: 4_ml",
+      "status": "PASS",
+      "message": "ML pipeline",
+      "timestamp": "2026-05-20T13:55:31.543004",
+      "details": {}
+    },
+    {
+      "name": "Directory: 5_reporting",
+      "status": "PASS",
+      "message": "Reporting layer",
+      "timestamp": "2026-05-20T13:55:31.543004",
+      "details": {}
+    },
+    {
+      "name": "File: 2_orchestration/airflow.cfg",
+      "status": "PASS",
+      "message": "Airflow configuration",
+      "timestamp": "2026-05-20T13:55:31.543004",
+      "details": {}
+    },
+    {
+      "name": "File: 2_orchestration/requirements.txt",
+      "status": "PASS",
+      "message": "Python dependencies",
+      "timestamp": "2026-05-20T13:55:31.543004",
+      "details": {}
+    },
+    {
+      "name": "File: 3_transformation/dbt_project.yml",
+      "status": "PASS",
+      "message": "dbt project",
+      "timestamp": "2026-05-20T13:55:31.543004",
+      "details": {}
+    },
+    {
+      "name": "File: 4_ml/README.md",
+      "status": "PASS",
+      "message": "ML documentation",
+      "timestamp": "2026-05-20T13:55:31.543004",
+      "details": {}
+    },
+    {
+      "name": "Package: pandas",
+      "status": "PASS",
+      "message": "pandas is installed",
+      "timestamp": "2026-05-20T13:55:31.543004",
+      "details": {}
+    },
+    {
+      "name": "Package: numpy",
+      "status": "PASS",
+      "message": "numpy is installed",
+      "timestamp": "2026-05-20T13:55:31.544004",
+      "details": {}
+    },
+    {
+      "name": "Package: scikit-learn",
+      "status": "FAIL",
+      "message": "scikit-learn is NOT installed",
+      "timestamp": "2026-05-20T13:55:31.544004",
+      "details": {}
+    },
+    {
+      "name": "Package: xgboost",
+      "status": "PASS",
+      "message": "xgboost is installed",
+      "timestamp": "2026-05-20T13:55:32.748754",
+      "details": {}
+    },
+    {
+      "name": "Package: mlflow",
+      "status": "PASS",
+      "message": "mlflow is installed",
+      "timestamp": "2026-05-20T13:55:34.103850",
+      "details": {}
+    },
+    {
+      "name": "Package: sqlalchemy",
+      "status": "PASS",
+      "message": "sqlalchemy is installed",
+      "timestamp": "2026-05-20T13:55:34.103850",
+      "details": {}
+    },
+    {
+      "name": "Package: pyodbc",
+      "status": "PASS",
+      "message": "pyodbc is installed",
+      "timestamp": "2026-05-20T13:55:34.103850",
+      "details": {}
+    },
+    {
+      "name": "Package: airflow",
+      "status": "FAIL",
+      "message": "airflow is NOT installed",
+      "timestamp": "2026-05-20T13:55:34.104847",
+      "details": {}
+    },
+    {
+      "name": "ETL Phase: Feature Loading",
+      "status": "PASS",
+      "message": "ETL phase can load 136,676 rows",
+      "timestamp": "2026-05-20T13:55:34.733608",
+      "details": {}
+    },
+    {
+      "name": "ML Phase: Feature Engineering",
+      "status": "PASS",
+      "message": "ML phase can process data - Train: 109340, Test: 27336",
+      "timestamp": "2026-05-20T13:55:35.347646",
+      "details": {}
+    },
+    {
+      "name": "ML Phase: Data Preparation",
+      "status": "PASS",
+      "message": "Training matrix prepared: (109340, 37)",
+      "timestamp": "2026-05-20T13:55:35.360616",
+      "details": {}
+    }
+  ],
+  "summary": {
+    "passed": 32,
+    "failed": 5,
+    "warnings": 0
+  },
+  "component_status": {}
+}

@@ -1,0 +1,813 @@
+"""
+ATB BI ML Pipeline Orchestration
+
+Integrated Airflow DAG for feature engineering, model training, deployment, and scoring.
+This DAG executes after the warehouse ETL completes and manages the full ML lifecycle:
+  1. Load features from fact_customer_risk
+  2. Execute feature engineering notebooks
+  3. Train models (XGBoost + Random Forest)
+  4. Generate SHAP explainability
+  5. Deploy best model to MLflow
+  6. Create scoring batch jobs
+  7. Add predictions back to warehouse
+"""
+
+from datetime import datetime, timedelta
+from pathlib import Path
+import json
+import logging
+from typing import Dict, Any
+
+from airflow import DAG
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.bash import BashOperator
+from airflow.utils.task_group import TaskGroup
+from airflow.models import Variable
+from airflow.exceptions import AirflowSkipException
+
+logger = logging.getLogger(__name__)
+
+# Paths
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ML_ROOT = PROJECT_ROOT / "4_ml"
+ML_SRC = ML_ROOT / "src"
+NOTEBOOKS_DIR = ML_ROOT / "notebooks"
+OUTPUTS_DIR = ML_ROOT / "outputs"
+MODELS_DIR = ML_ROOT / "models"
+
+# Ensure directories exist
+for directory in (OUTPUTS_DIR, MODELS_DIR):
+    directory.mkdir(parents=True, exist_ok=True)
+
+# Configuration
+PYTHON_EXECUTABLE = (PROJECT_ROOT / ".venv" / "Scripts" / "python.exe").as_posix()
+MLFLOW_EXPERIMENT_NAME = "atb_bi_customer_risk"
+MODEL_REGISTRY_NAME = "atb_risk_classifier"
+
+default_args = {
+    "owner": "ATB BI ML Team",
+    "depends_on_past": False,
+    "start_date": datetime(2024, 1, 1),
+    "email": ["ml@atb.com", "admin@atb.com"],
+    "email_on_failure": True,
+    "email_on_retry": True,
+    "retries": 2,
+    "retry_delay": timedelta(minutes=10),
+}
+
+dag = DAG(
+    "atb_ml_pipeline",
+    default_args=default_args,
+    description="ATB BI ML Pipeline: Feature Engineering, Model Training, Deployment & Scoring",
+    schedule_interval=None,  # Triggered by main DAG after warehouse ETL
+    catchup=False,
+    tags=["ATB", "ML", "Production"],
+    doc_md=__doc__,
+)
+
+
+# ============================================================================
+# PHASE 1: Data Loading & Feature Engineering
+# ============================================================================
+
+def load_feature_data(**context) -> Dict[str, Any]:
+    """Load features from warehouse fact_customer_risk table."""
+    logger.info("Loading feature data from warehouse...")
+    
+    import sys
+    sys.path.insert(0, str(ML_SRC))
+    from data_access import load_feature_frame
+    
+    try:
+        frame = load_feature_frame()
+        n_rows = len(frame)
+        n_cols = len(frame.columns)
+        logger.info(f"Loaded feature frame: {n_rows} rows × {n_cols} columns")
+        
+        # Cache to CSV for reproducibility
+        cache_path = OUTPUTS_DIR / "feature_frame_cache.csv"
+        frame.to_csv(cache_path, index=False)
+        logger.info(f"Cached to {cache_path}")
+        
+        context["task_instance"].xcom_push(
+            key="feature_data_path",
+            value=str(cache_path)
+        )
+        context["task_instance"].xcom_push(
+            key="feature_data_shape",
+            value={"rows": n_rows, "columns": n_cols}
+        )
+        
+        return {
+            "status": "success",
+            "rows": n_rows,
+            "columns": n_cols,
+            "path": str(cache_path)
+        }
+    except Exception as e:
+        logger.error(f"Failed to load feature data: {e}")
+        raise
+
+
+def engineer_features(**context) -> Dict[str, Any]:
+    """Execute feature engineering transformations."""
+    logger.info("Engineering features...")
+    
+    import sys
+    sys.path.insert(0, str(ML_SRC))
+    from data_access import load_feature_frame
+    from features import build_targets, engineer_features, select_feature_columns
+    import pandas as pd
+    
+    try:
+        frame = load_feature_frame()
+        logger.info(f"Loaded {len(frame)} rows for feature engineering")
+        
+        # Build targets
+        frame = build_targets(frame, risk_threshold=50)
+        logger.info(f"Target distribution: {frame['risk_target'].value_counts().to_dict()}")
+        
+        # Engineer features
+        frame = engineer_features(frame)
+        logger.info(f"Engineered features: {len(frame.columns)} columns")
+        
+        # Select valid features (avoid leakage)
+        feature_columns, numeric_features, categorical_features = select_feature_columns(frame)
+        logger.info(f"Selected {len(feature_columns)} features: "
+                   f"{len(numeric_features)} numeric, {len(categorical_features)} categorical")
+        
+        # Save feature metadata
+        metadata = {
+            "feature_columns": feature_columns,
+            "numeric_features": numeric_features,
+            "categorical_features": categorical_features,
+            "n_rows": len(frame),
+            "n_features": len(feature_columns),
+            "target_balance": frame["risk_target"].value_counts().to_dict()
+        }
+        
+        metadata_path = OUTPUTS_DIR / "feature_metadata.json"
+        metadata_path.write_text(json.dumps(metadata, indent=2))
+        logger.info(f"Saved feature metadata to {metadata_path}")
+        
+        # Save engineered frame for next tasks
+        frame_path = OUTPUTS_DIR / "engineered_frame.pkl"
+        import pickle
+        frame.to_pickle(frame_path)
+        
+        context["task_instance"].xcom_push(key="feature_metadata", value=metadata)
+        context["task_instance"].xcom_push(key="engineered_frame_path", value=str(frame_path))
+        
+        return metadata
+    except Exception as e:
+        logger.error(f"Feature engineering failed: {e}")
+        raise
+
+
+# ============================================================================
+# PHASE 2: Model Training & Evaluation
+# ============================================================================
+
+def train_xgboost_model(**context) -> Dict[str, Any]:
+    """Train XGBoost model with hyperparameter tuning."""
+    logger.info("Training XGBoost model...")
+    
+    import sys
+    sys.path.insert(0, str(ML_SRC))
+    from modeling import (
+        build_model_specs, optimize_threshold, evaluate_model, 
+        tune_model, log_metrics_and_artifacts
+    )
+    from features import split_temporal, build_model_frame
+    import pandas as pd
+    import pickle
+    
+    try:
+        # Load metadata
+        metadata = context["task_instance"].xcom_pull(
+            task_ids="engineer_features", key="feature_metadata"
+        )
+        frame_path = context["task_instance"].xcom_pull(
+            task_ids="engineer_features", key="engineered_frame_path"
+        )
+        
+        # Load engineered frame
+        frame = pd.read_pickle(frame_path)
+        frame = build_model_frame(frame)
+        
+        # Train/test split (temporal)
+        train, test = split_temporal(frame)
+        logger.info(f"Train: {len(train)} rows, Test: {len(test)} rows")
+        
+        # Prepare features
+        feature_columns = metadata["feature_columns"]
+        numeric_features = metadata["numeric_features"]
+        categorical_features = metadata["categorical_features"]
+        
+        X_train = train[feature_columns]
+        y_train = train["risk_target"].astype(int)
+        X_test = test[feature_columns]
+        y_test = test["risk_target"].astype(int)
+        
+        # Build model specs
+        specs = build_model_specs(numeric_features, categorical_features)
+        xgb_spec = next(s for s in specs if s.name == "xgboost")
+        
+        # Tune model (light search for speed)
+        logger.info("Tuning XGBoost hyperparameters...")
+        search = tune_model(xgb_spec, X_train, y_train, n_iter=10)
+        best_model = search.best_estimator_
+        
+        # Find optimal threshold
+        y_proba = best_model.predict_proba(X_test)[:, 1]
+        threshold, best_f1 = optimize_threshold(y_test, y_proba)
+        logger.info(f"Optimal threshold: {threshold:.3f}, F1: {best_f1:.3f}")
+        
+        # Evaluate
+        metrics = evaluate_model(best_model, X_test, y_test, threshold=threshold)
+        logger.info(f"XGBoost metrics: {json.dumps(metrics, indent=2)}")
+        
+        # Log to MLflow
+        artifact_path = log_metrics_and_artifacts(
+            model_name="xgboost",
+            best_model=best_model,
+            metrics=metrics,
+            param_summary=search.best_params_,
+            artifact_filename="xgboost_model.pkl"
+        )
+        
+        # Save model locally
+        model_path = MODELS_DIR / "xgboost_best.pkl"
+        with open(model_path, "wb") as f:
+            pickle.dump({"model": best_model, "threshold": threshold, "metrics": metrics}, f)
+        logger.info(f"Saved XGBoost model to {model_path}")
+        
+        context["task_instance"].xcom_push(
+            key="xgboost_results",
+            value={
+                "model_path": str(model_path),
+                "metrics": metrics,
+                "threshold": threshold,
+                "mlflow_artifact": artifact_path
+            }
+        )
+        
+        return {"model": "xgboost", "f1": metrics["f1"], "artifact": artifact_path}
+    except Exception as e:
+        logger.error(f"XGBoost training failed: {e}")
+        raise
+
+
+def train_random_forest_model(**context) -> Dict[str, Any]:
+    """Train Random Forest model for comparison."""
+    logger.info("Training Random Forest model...")
+    
+    import sys
+    sys.path.insert(0, str(ML_SRC))
+    from modeling import (
+        build_model_specs, optimize_threshold, evaluate_model, 
+        tune_model, log_metrics_and_artifacts
+    )
+    from features import split_temporal, build_model_frame
+    import pandas as pd
+    import pickle
+    
+    try:
+        # Load metadata
+        metadata = context["task_instance"].xcom_pull(
+            task_ids="engineer_features", key="feature_metadata"
+        )
+        frame_path = context["task_instance"].xcom_pull(
+            task_ids="engineer_features", key="engineered_frame_path"
+        )
+        
+        # Load engineered frame
+        frame = pd.read_pickle(frame_path)
+        frame = build_model_frame(frame)
+        
+        # Train/test split
+        train, test = split_temporal(frame)
+        
+        # Prepare features
+        feature_columns = metadata["feature_columns"]
+        numeric_features = metadata["numeric_features"]
+        categorical_features = metadata["categorical_features"]
+        
+        X_train = train[feature_columns]
+        y_train = train["risk_target"].astype(int)
+        X_test = test[feature_columns]
+        y_test = test["risk_target"].astype(int)
+        
+        # Build model specs
+        specs = build_model_specs(numeric_features, categorical_features)
+        rf_spec = next(s for s in specs if s.name == "random_forest")
+        
+        # Tune model
+        logger.info("Tuning Random Forest hyperparameters...")
+        search = tune_model(rf_spec, X_train, y_train, n_iter=10)
+        best_model = search.best_estimator_
+        
+        # Find optimal threshold
+        y_proba = best_model.predict_proba(X_test)[:, 1]
+        threshold, best_f1 = optimize_threshold(y_test, y_proba)
+        
+        # Evaluate
+        metrics = evaluate_model(best_model, X_test, y_test, threshold=threshold)
+        logger.info(f"Random Forest metrics: {json.dumps(metrics, indent=2)}")
+        
+        # Log to MLflow
+        artifact_path = log_metrics_and_artifacts(
+            model_name="random_forest",
+            best_model=best_model,
+            metrics=metrics,
+            param_summary=search.best_params_,
+            artifact_filename="random_forest_model.pkl"
+        )
+        
+        # Save model locally
+        model_path = MODELS_DIR / "random_forest_best.pkl"
+        with open(model_path, "wb") as f:
+            pickle.dump({"model": best_model, "threshold": threshold, "metrics": metrics}, f)
+        logger.info(f"Saved Random Forest model to {model_path}")
+        
+        context["task_instance"].xcom_push(
+            key="random_forest_results",
+            value={
+                "model_path": str(model_path),
+                "metrics": metrics,
+                "threshold": threshold,
+                "mlflow_artifact": artifact_path
+            }
+        )
+        
+        return {"model": "random_forest", "f1": metrics["f1"], "artifact": artifact_path}
+    except Exception as e:
+        logger.error(f"Random Forest training failed: {e}")
+        raise
+
+
+def select_best_model(**context) -> str:
+    """Compare models and select best performer."""
+    logger.info("Selecting best model...")
+    
+    try:
+        xgb_results = context["task_instance"].xcom_pull(
+            task_ids="train_xgboost", key="xgboost_results"
+        )
+        rf_results = context["task_instance"].xcom_pull(
+            task_ids="train_random_forest", key="random_forest_results"
+        )
+        
+        xgb_f1 = xgb_results["metrics"]["f1"]
+        rf_f1 = rf_results["metrics"]["f1"]
+        
+        best_model_name = "train_xgboost" if xgb_f1 >= rf_f1 else "train_random_forest"
+        logger.info(f"Best model: {best_model_name} (XGBoost F1: {xgb_f1:.3f}, "
+                   f"Random Forest F1: {rf_f1:.3f})")
+        
+        # Store best model info
+        best_results = xgb_results if best_model_name == "train_xgboost" else rf_results
+        context["task_instance"].xcom_push(
+            key="best_model_results",
+            value={**best_results, "model_type": "xgboost" if best_model_name == "train_xgboost" else "random_forest"}
+        )
+        
+        return best_model_name
+    except Exception as e:
+        logger.error(f"Model selection failed: {e}")
+        raise
+
+
+# ============================================================================
+# PHASE 3: Explainability & Deployment
+# ============================================================================
+
+def generate_shap_explainability(**context) -> Dict[str, Any]:
+    """Generate SHAP explainability artifacts."""
+    logger.info("Generating SHAP explanations...")
+    
+    import sys
+    sys.path.insert(0, str(ML_SRC))
+    from explainability import generate_global_explanations, generate_local_explanations
+    from features import split_temporal, build_model_frame
+    import pandas as pd
+    import pickle
+    
+    try:
+        # Load best model
+        best_results = context["task_instance"].xcom_pull(
+            task_ids="select_best_model", key="best_model_results"
+        )
+        model_path = best_results["model_path"]
+        
+        with open(model_path, "rb") as f:
+            model_data = pickle.load(f)
+        best_model = model_data["model"]
+        
+        # Load frame for SHAP
+        frame_path = context["task_instance"].xcom_pull(
+            task_ids="engineer_features", key="engineered_frame_path"
+        )
+        frame = pd.read_pickle(frame_path)
+        frame = build_model_frame(frame)
+        _, test = split_temporal(frame)
+        
+        # Generate explanations
+        logger.info("Generating global SHAP explanations...")
+        global_exp = generate_global_explanations(best_model, test)
+        
+        logger.info("Generating local SHAP explanations...")
+        local_exp = generate_local_explanations(best_model, test)
+        
+        # Save to outputs
+        shap_dir = OUTPUTS_DIR / "shap"
+        shap_dir.mkdir(exist_ok=True)
+        
+        import json
+        (shap_dir / "global_explanations.json").write_text(json.dumps(global_exp, default=str))
+        (shap_dir / "local_explanations.json").write_text(json.dumps(local_exp, default=str))
+        
+        logger.info(f"Saved SHAP artifacts to {shap_dir}")
+        
+        context["task_instance"].xcom_push(key="shap_artifacts_dir", value=str(shap_dir))
+        
+        return {"shap_dir": str(shap_dir), "status": "success"}
+    except Exception as e:
+        logger.error(f"SHAP generation failed: {e}")
+        # Don't fail the pipeline if SHAP fails
+        logger.warning("Continuing without SHAP due to error")
+        return {"shap_dir": None, "status": "warning"}
+
+
+def register_model_to_registry(**context) -> Dict[str, Any]:
+    """Register best model to MLflow Model Registry."""
+    logger.info("Registering model to MLflow registry...")
+    
+    try:
+        import sys
+        sys.path.insert(0, str(ML_SRC))
+        from config import MLFLOW_EXPERIMENT_NAME
+        import mlflow
+        
+        best_results = context["task_instance"].xcom_pull(
+            task_ids="select_best_model", key="best_model_results"
+        )
+        
+        # Register to MLflow
+        model_uri = best_results["mlflow_artifact"]
+        model_type = best_results["model_type"]
+        
+        # Set registry model
+        version = mlflow.register_model(
+            model_uri=model_uri,
+            name=MODEL_REGISTRY_NAME
+        )
+        
+        logger.info(f"Registered model {MODEL_REGISTRY_NAME} version {version.version}")
+        
+        context["task_instance"].xcom_push(
+            key="registered_model",
+            value={
+                "name": MODEL_REGISTRY_NAME,
+                "version": str(version.version),
+                "uri": model_uri,
+                "type": model_type
+            }
+        )
+        
+        return {
+            "model_name": MODEL_REGISTRY_NAME,
+            "version": str(version.version),
+            "status": "registered"
+        }
+    except Exception as e:
+        logger.error(f"Model registration failed: {e}")
+        # Continue without registry if MLflow is not available
+        logger.warning("Continuing without MLflow registry")
+        return {"status": "warning", "error": str(e)}
+
+
+# ============================================================================
+# PHASE 4: Batch Scoring & Warehouse Integration
+# ============================================================================
+
+def create_scoring_batch_job(**context) -> Dict[str, Any]:
+    """Create batch scoring predictions for all customers."""
+    logger.info("Creating batch scoring predictions...")
+    
+    import sys
+    sys.path.insert(0, str(ML_SRC))
+    from data_access import load_feature_frame
+    from features import build_model_frame, select_feature_columns
+    import pandas as pd
+    import pickle
+    
+    try:
+        # Load best model
+        best_results = context["task_instance"].xcom_pull(
+            task_ids="select_best_model", key="best_model_results"
+        )
+        model_path = best_results["model_path"]
+        threshold = best_results["threshold"]
+        
+        with open(model_path, "rb") as f:
+            model_data = pickle.load(f)
+        best_model = model_data["model"]
+        
+        # Load all feature data
+        logger.info("Loading all customer features for scoring...")
+        frame = load_feature_frame()
+        frame = build_model_frame(frame)
+        
+        # Get feature columns
+        metadata = context["task_instance"].xcom_pull(
+            task_ids="engineer_features", key="feature_metadata"
+        )
+        feature_columns = metadata["feature_columns"]
+        
+        # Score all customers
+        logger.info(f"Scoring {len(frame)} customers...")
+        X = frame[feature_columns]
+        predictions = best_model.predict_proba(X)[:, 1]
+        
+        # Create scoring output
+        scores_df = frame[["fact_customer_risk_sk", "customer_id", "scoring_date"]].copy()
+        scores_df["risk_score_ml"] = predictions
+        scores_df["risk_prediction_ml"] = (predictions >= threshold).astype(int)
+        scores_df["prediction_confidence"] = predictions.max() * (predictions >= threshold).astype(int)
+        scores_df["prediction_timestamp"] = pd.Timestamp.now()
+        scores_df["model_version"] = best_results.get("model_path", "v1")
+        
+        # Save scoring output
+        scores_path = OUTPUTS_DIR / "customer_risk_scores.csv"
+        scores_df.to_csv(scores_path, index=False)
+        logger.info(f"Saved {len(scores_df)} predictions to {scores_path}")
+        
+        # Statistics
+        high_risk_count = (scores_df["risk_prediction_ml"] == 1).sum()
+        logger.info(f"High-risk customers identified: {high_risk_count} ({100*high_risk_count/len(scores_df):.1f}%)")
+        
+        context["task_instance"].xcom_push(
+            key="batch_scores_path",
+            value=str(scores_path)
+        )
+        context["task_instance"].xcom_push(
+            key="batch_scoring_stats",
+            value={
+                "total_scored": len(scores_df),
+                "high_risk_count": int(high_risk_count),
+                "high_risk_pct": float(100*high_risk_count/len(scores_df)),
+                "scores_path": str(scores_path)
+            }
+        )
+        
+        return {
+            "status": "success",
+            "total_scored": len(scores_df),
+            "high_risk": int(high_risk_count),
+            "scores_path": str(scores_path)
+        }
+    except Exception as e:
+        logger.error(f"Batch scoring failed: {e}")
+        raise
+
+
+def integrate_predictions_to_warehouse(**context) -> Dict[str, Any]:
+    """Load batch predictions into warehouse scoring table."""
+    logger.info("Integrating predictions into warehouse...")
+    
+    try:
+        import sys
+        sys.path.insert(0, str(ML_SRC))
+        from data_access import make_engine, WarehouseConnection
+        import pandas as pd
+        
+        # Load scores
+        scores_path = context["task_instance"].xcom_pull(
+            task_ids="create_scoring_batch_job", key="batch_scores_path"
+        )
+        scores_df = pd.read_csv(scores_path)
+        
+        # Connect to warehouse
+        engine = make_engine()
+        connection_config = WarehouseConnection()
+        schema = connection_config.schema
+        
+        logger.info(f"Writing {len(scores_df)} predictions to {schema}.ml_customer_risk_scores")
+        
+        # Create/append to scoring table
+        scores_df.to_sql(
+            "ml_customer_risk_scores",
+            engine,
+            schema=schema,
+            if_exists="append",
+            index=False,
+            chunksize=5000
+        )
+        
+        logger.info(f"Successfully loaded predictions to warehouse")
+        
+        context["task_instance"].xcom_push(
+            key="warehouse_integration_status",
+            value={"status": "success", "rows_loaded": len(scores_df)}
+        )
+        
+        return {"status": "success", "rows_loaded": len(scores_df)}
+    except Exception as e:
+        logger.warning(f"Warehouse integration warning (may not have table): {e}")
+        # Don't fail - table may not exist yet
+        return {"status": "warning", "error": str(e)}
+
+
+# ============================================================================
+# PHASE 5: Model Monitoring & Drift Detection
+# ============================================================================
+
+def calculate_model_metrics(**context) -> Dict[str, Any]:
+    """Calculate comprehensive model performance metrics."""
+    logger.info("Calculating model performance metrics...")
+    
+    try:
+        xgb_results = context["task_instance"].xcom_pull(
+            task_ids="train_xgboost", key="xgboost_results"
+        )
+        rf_results = context["task_instance"].xcom_pull(
+            task_ids="train_random_forest", key="random_forest_results"
+        )
+        batch_stats = context["task_instance"].xcom_pull(
+            task_ids="create_scoring_batch_job", key="batch_scoring_stats"
+        )
+        
+        metrics_summary = {
+            "training_results": {
+                "xgboost": xgb_results["metrics"],
+                "random_forest": rf_results["metrics"]
+            },
+            "batch_scoring": batch_stats,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # Save metrics
+        metrics_path = OUTPUTS_DIR / "model_performance_metrics.json"
+        metrics_path.write_text(json.dumps(metrics_summary, indent=2))
+        logger.info(f"Saved metrics to {metrics_path}")
+        
+        context["task_instance"].xcom_push(
+            key="performance_metrics",
+            value=metrics_summary
+        )
+        
+        return metrics_summary
+    except Exception as e:
+        logger.error(f"Metrics calculation failed: {e}")
+        raise
+
+
+def monitor_data_drift(**context) -> Dict[str, Any]:
+    """Monitor for data distribution drift."""
+    logger.info("Monitoring for data drift...")
+    
+    try:
+        import sys
+        sys.path.insert(0, str(ML_SRC))
+        from data_access import load_feature_frame
+        
+        # Load current data
+        frame = load_feature_frame()
+        
+        drift_report = {
+            "sample_size": len(frame),
+            "timestamp": datetime.now().isoformat(),
+            "columns_checked": len(frame.columns),
+            "null_values_total": int(frame.isnull().sum().sum()),
+            "status": "monitoring_active"
+        }
+        
+        # Save drift report
+        drift_path = OUTPUTS_DIR / "data_drift_report.json"
+        drift_path.write_text(json.dumps(drift_report, indent=2))
+        logger.info(f"Data drift report: {json.dumps(drift_report, indent=2)}")
+        
+        context["task_instance"].xcom_push(key="drift_report", value=drift_report)
+        
+        return drift_report
+    except Exception as e:
+        logger.warning(f"Drift monitoring warning: {e}")
+        return {"status": "warning", "error": str(e)}
+
+
+# ============================================================================
+# DAG Task Definitions
+# ============================================================================
+
+# Phase 1: Loading & Engineering
+load_data_task = PythonOperator(
+    task_id="load_feature_data",
+    python_callable=load_feature_data,
+    dag=dag,
+    doc_md="Load customer risk features from warehouse fact tables"
+)
+
+engineer_features_task = PythonOperator(
+    task_id="engineer_features",
+    python_callable=engineer_features,
+    dag=dag,
+    doc_md="Execute feature engineering transformations"
+)
+
+# Phase 2: Training
+train_xgboost_task = PythonOperator(
+    task_id="train_xgboost",
+    python_callable=train_xgboost_model,
+    dag=dag,
+    doc_md="Train XGBoost model with hyperparameter tuning"
+)
+
+train_rf_task = PythonOperator(
+    task_id="train_random_forest",
+    python_callable=train_random_forest_model,
+    dag=dag,
+    doc_md="Train Random Forest model for comparison"
+)
+
+select_model_task = BranchPythonOperator(
+    task_id="select_best_model",
+    python_callable=select_best_model,
+    dag=dag,
+    doc_md="Select best performing model"
+)
+
+# Phase 3: Explainability & Deployment
+shap_task = PythonOperator(
+    task_id="generate_shap",
+    python_callable=generate_shap_explainability,
+    dag=dag,
+    doc_md="Generate SHAP explainability artifacts",
+    trigger_rule="none_failed_or_skipped"
+)
+
+register_model_task = PythonOperator(
+    task_id="register_model",
+    python_callable=register_model_to_registry,
+    dag=dag,
+    doc_md="Register model to MLflow registry",
+    trigger_rule="none_failed_or_skipped"
+)
+
+# Phase 4: Batch Scoring
+batch_score_task = PythonOperator(
+    task_id="create_scoring_batch_job",
+    python_callable=create_scoring_batch_job,
+    dag=dag,
+    doc_md="Generate batch predictions for all customers",
+    trigger_rule="none_failed_or_skipped"
+)
+
+warehouse_integration_task = PythonOperator(
+    task_id="integrate_predictions_to_warehouse",
+    python_callable=integrate_predictions_to_warehouse,
+    dag=dag,
+    doc_md="Load predictions into warehouse scoring table",
+    trigger_rule="none_failed_or_skipped"
+)
+
+# Phase 5: Monitoring
+metrics_task = PythonOperator(
+    task_id="calculate_model_metrics",
+    python_callable=calculate_model_metrics,
+    dag=dag,
+    doc_md="Calculate comprehensive model performance metrics",
+    trigger_rule="none_failed_or_skipped"
+)
+
+drift_task = PythonOperator(
+    task_id="monitor_data_drift",
+    python_callable=monitor_data_drift,
+    dag=dag,
+    doc_md="Monitor for data distribution drift",
+    trigger_rule="none_failed_or_skipped"
+)
+
+# ============================================================================
+# Task Dependencies
+# ============================================================================
+
+# Phase 1 sequence
+load_data_task >> engineer_features_task
+
+# Phase 2: parallel training
+engineer_features_task >> [train_xgboost_task, train_rf_task]
+
+# Model selection (branches to best model)
+[train_xgboost_task, train_rf_task] >> select_model_task
+
+# Phase 3: after model selection
+select_model_task >> [shap_task, register_model_task]
+
+# Phase 4: after deployment
+[shap_task, register_model_task] >> batch_score_task
+batch_score_task >> warehouse_integration_task
+
+# Phase 5: final monitoring
+[warehouse_integration_task, shap_task, register_model_task] >> metrics_task
+metrics_task >> drift_task

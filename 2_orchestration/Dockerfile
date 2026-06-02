@@ -5,6 +5,7 @@ USER root
 # Install system dependencies for SQL Server
 RUN apt-get update && apt-get install -y \
     curl \
+    git \
     gnupg \
     unixodbc \
     unixodbc-dev \

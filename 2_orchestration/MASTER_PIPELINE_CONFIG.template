@@ -1,0 +1,402 @@
+# Master Pipeline Configuration Template
+
+Copy this file to `.env` in `2_orchestration/` and fill in your values.
+
+## SQL Server Connection
+
+```env
+# SQL Server hostname or IP address
+SQL_SERVER=DESKTOP-B0PDEI7
+
+# SQL Server port (default: 1433, non-standard: 1434)
+SQL_PORT=1434
+
+# Database name
+SQL_DB=ATB_BI
+
+# SQL Server login user
+SQL_USER=airbyte_user
+
+# SQL Server password (keep secure!)
+SQL_PASSWORD=AZERTY123
+
+# ODBC Driver version
+ODBC_DRIVER=ODBC Driver 17 for SQL Server
+
+# Connection timeout (seconds)
+SQL_TIMEOUT=300
+
+# Number of retries on connection failure
+SQL_RETRIES=2
+```
+
+## Airbyte Configuration
+
+```env
+# Airbyte API endpoint
+AIRBYTE_API_URL=http://localhost:8000
+
+# Airbyte API authentication key
+AIRBYTE_API_KEY=default_key
+
+# Airbyte connection timeout (seconds)
+AIRBYTE_TIMEOUT=1800
+
+# Airbyte sync poll interval (seconds)
+AIRBYTE_POLL_INTERVAL=10
+```
+
+## Airbyte Connection IDs (Immutable)
+
+```env
+# Mapping: source table → Airbyte connection UUID → ODS target
+
+AIRBYTE_ACCOUNT_CONNECTION_ID=91205bfd-c0a8-4c76-9813-f616beb21da0
+AIRBYTE_CURRENCY_CONNECTION_ID=d6e83091-3f92-4ea5-8ec3-04d60c179f82
+AIRBYTE_CUSTOMER_CONNECTION_ID=887e6d51-fccf-4547-a97d-970417b57613
+AIRBYTE_DAO_CONNECTION_ID=eab9fdb8-3a23-424a-85e0-b6719dab8ce3
+AIRBYTE_INDUSTRY_CONNECTION_ID=7a3bcd9d-d56f-4ab1-97b1-9da7039c8d59
+AIRBYTE_SECTOR_CONNECTION_ID=461f5b6b-4111-48d6-ae71-34b6e7aaee5a
+AIRBYTE_TARGET_CONNECTION_ID=cfd9fae4-c248-4043-8464-a644d3c9bb77
+```
+
+## dbt Configuration
+
+```env
+# Path to dbt project directory (in container)
+DBT_PROJECT_DIR=/opt/airflow/dbt_project
+
+# Path to dbt profiles directory (in container)
+DBT_PROFILES_DIR=/opt/airflow/dbt_profiles
+
+# dbt target (dev, prod, or custom)
+DBT_TARGET=prod
+
+# dbt timeout (seconds)
+DBT_TIMEOUT=600
+
+# Number of dbt threads (parallel model execution)
+DBT_THREADS=4
+
+# dbt log level (debug, info, warn, error)
+DBT_LOG_LEVEL=info
+
+# dbt profiles filename
+DBT_PROFILES_FILENAME=profiles.yml
+
+# dbt project filename
+DBT_PROJECT_FILENAME=dbt_project.yml
+```
+
+## ML Configuration
+
+```env
+# Path to ML source code (in container)
+ML_SRC_DIR=/opt/airflow/ml_src
+
+# Path to ML models storage (in container)
+ML_MODELS_DIR=/opt/airflow/ml_models
+
+# ML model type (xgboost, random_forest, ensemble)
+ML_MODEL_TYPE=auto_select
+
+# ML feature output format (csv, parquet, pickle)
+ML_FEATURE_FORMAT=csv
+
+# Imbalance handling method (smote, smotetomek, random_undersampling)
+ML_IMBALANCE_METHOD=smotetomek
+
+# ML train/test split ratio
+ML_TEST_SIZE=0.2
+
+# ML random seed (for reproducibility)
+ML_RANDOM_STATE=42
+
+# XGBoost hyperparameters
+ML_XGBOOST_MAX_DEPTH=6
+ML_XGBOOST_LEARNING_RATE=0.1
+ML_XGBOOST_N_ESTIMATORS=100
+ML_XGBOOST_EARLY_STOPPING_ROUNDS=10
+
+# Random Forest hyperparameters
+ML_RF_MAX_DEPTH=10
+ML_RF_N_ESTIMATORS=100
+ML_RF_MIN_SAMPLES_SPLIT=5
+
+# ML Model Performance Thresholds (alerting)
+ML_F1_THRESHOLD=0.70
+ML_ROC_AUC_THRESHOLD=0.80
+ML_PRECISION_RECALL_TOLERANCE=0.15
+
+# Enable SHAP explanations (true/false)
+ML_ENABLE_SHAP=true
+
+# SHAP output format (html, json, png)
+ML_SHAP_FORMAT=html
+```
+
+## Airflow Configuration
+
+```env
+# Airflow home directory (in container)
+AIRFLOW_HOME=/opt/airflow
+
+# Airflow database backend (sqlite, postgres, mysql)
+AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+
+# Airflow executor type (LocalExecutor, CeleryExecutor, KubernetesExecutor)
+AIRFLOW__CORE__EXECUTOR=LocalExecutor
+
+# Airflow broker URL (for Celery)
+AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+
+# Maximum parallel tasks (LocalExecutor: 1-8, CeleryExecutor: unlimited)
+AIRFLOW__CORE__PARALLELISM=8
+
+# Maximum tasks per DAG run
+AIRFLOW__CORE__DAG_CONCURRENCY=4
+
+# DAG parsing interval (seconds)
+AIRFLOW__CORE__MIN_FILE_PROCESS_INTERVAL=30
+
+# Email on failure
+AIRFLOW__CORE__EMAIL_ON_FAILURE=true
+
+# Email backend (smtp, localmem, etc.)
+AIRFLOW__EMAIL__EMAIL_BACKEND=airflow.providers.smtp.utils.smtp_email_backend.SendGridEmailBackend
+
+# SMTP configuration (if using SendGrid or custom SMTP)
+AIRFLOW__SMTP__SMTP_HOST=smtp.sendgrid.net
+AIRFLOW__SMTP__SMTP_PORT=587
+AIRFLOW__SMTP__SMTP_USER=apikey
+AIRFLOW__SMTP__SMTP_PASSWORD=SG.your_api_key_here
+AIRFLOW__SMTP__SMTP_FROM=airflow@atb.local
+
+# Slack webhook (optional, for alerts)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# Slack channel for alerts
+SLACK_CHANNEL=#airflow-alerts
+
+# Airflow webserver port
+AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8080
+
+# Airflow webserver workers
+AIRFLOW__WEBSERVER__WORKERS=2
+
+# Airflow default timezone
+AIRFLOW__CORE__DEFAULT_TIMEZONE=UTC
+
+# Airflow default DAG orientation (LR, TB, RL, BT)
+AIRFLOW__WEBSERVER__DEFAULT_DAG_ORIENTATION=LR
+```
+
+## Logging Configuration
+
+```env
+# Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+LOG_LEVEL=INFO
+
+# Log format
+LOG_FORMAT=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+
+# Airflow log directory (in container)
+AIRFLOW__LOGGING__BASE_LOG_FOLDER=/opt/airflow/logs
+
+# Retention days for logs
+AIRFLOW__LOGGING__LOG_RETENTION_DAYS=30
+```
+
+## Monitoring & Alerts
+
+```env
+# Enable pipeline monitoring
+MONITORING_ENABLED=true
+
+# Monitoring backend (prometheus, datadog, cloudwatch)
+MONITORING_BACKEND=prometheus
+
+# Prometheus endpoint
+PROMETHEUS_ENDPOINT=http://prometheus:9090
+
+# Alert when pipeline takes longer than (seconds)
+PIPELINE_MAX_DURATION=7200
+
+# Alert on task failure
+ALERT_ON_TASK_FAILURE=true
+
+# Alert on DAG failure
+ALERT_ON_DAG_FAILURE=true
+
+# Notification recipients (comma-separated)
+NOTIFICATION_RECIPIENTS=data-team@atb.local,airflow-ops@atb.local
+```
+
+## Database Schema Configuration
+
+```env
+# ODS schema (raw ingested data)
+ODS_SCHEMA=PFE_ODS
+
+# Intermediate schema (business logic)
+INTERMEDIATE_SCHEMA=PFE_INTERMEDIATE
+
+# Warehouse schema (analytics)
+DWH_SCHEMA=PFE_DWH
+
+# Archive schema (old data, optional)
+ARCHIVE_SCHEMA=PFE_ARCHIVE
+```
+
+## Feature Engineering & ML Data
+
+```env
+# ODS table to query for features
+ML_SOURCE_FACT_TABLE=fact_customer_risk
+
+# ML target variable definition
+ML_TARGET_VARIABLE=global_risk_score >= 50
+
+# ML target variable name (in feature matrix)
+ML_TARGET_COLUMN_NAME=target_high_risk
+
+# Minimum data points for training (fail if below)
+ML_MIN_TRAINING_SAMPLES=10000
+
+# Maximum data points to train on (sample if exceeded)
+ML_MAX_TRAINING_SAMPLES=1000000
+
+# Feature scaling method (standard, minmax, robust, none)
+ML_SCALER_TYPE=standard
+
+# Missing value imputation strategy (mean, median, forward_fill, drop)
+ML_IMPUTATION_METHOD=median
+
+# Outlier handling (iqr, zscore, none)
+ML_OUTLIER_METHOD=iqr
+
+# Outlier removal threshold (IQR multiplier)
+ML_OUTLIER_THRESHOLD=3.0
+```
+
+## Performance Tuning
+
+```env
+# Batch size for SQL insertions
+BATCH_INSERT_SIZE=1000
+
+# Connection pool size (for concurrent queries)
+CONNECTION_POOL_SIZE=10
+
+# Timeout for long-running queries (seconds)
+QUERY_TIMEOUT=600
+
+# Max retries for failed dbt models
+DBT_MAX_RETRIES=2
+
+# Max retries for failed Airbyte syncs
+AIRBYTE_MAX_RETRIES=3
+```
+
+## Security & Secrets
+
+```env
+# Encryption for sensitive data in logs
+ENCRYPT_LOGS=true
+
+# Mask passwords in logs
+MASK_PASSWORDS=true
+
+# SSL/TLS for SQL Server connection
+SQL_ENCRYPT=false
+
+# SSL certificate verification
+SQL_TRUST_CERT=true
+
+# API key for Airflow (if using remote executor)
+AIRFLOW_API_KEY=your_api_key_here
+```
+
+## Feature Flags & Experimental
+
+```env
+# Enable experimental features
+EXPERIMENTAL_FEATURES_ENABLED=false
+
+# Enable data lineage tracking
+DATA_LINEAGE_ENABLED=true
+
+# Enable model registry (MLflow)
+ML_REGISTRY_ENABLED=true
+
+# MLflow tracking URI
+MLFLOW_TRACKING_URI=file:///opt/airflow/ml_runs
+
+# Enable model versioning
+ML_VERSIONING_ENABLED=true
+```
+
+---
+
+## Usage
+
+### Option 1: Docker Compose (Recommended)
+
+Create `.env` file in `2_orchestration/`:
+
+```bash
+cp MASTER_PIPELINE_CONFIG.template .env
+
+# Edit .env with your values
+nano .env
+
+# Docker compose automatically loads .env
+docker compose up -d
+```
+
+### Option 2: Kubernetes ConfigMap
+
+For Kubernetes deployments:
+
+```bash
+kubectl create configmap airflow-pipeline-config --from-env-file=.env -n airflow
+```
+
+### Option 3: Environment Variables
+
+Set manually before starting:
+
+```bash
+export SQL_SERVER=DESKTOP-B0PDEI7
+export SQL_PORT=1434
+# ... etc
+docker compose up -d
+```
+
+---
+
+## Verification
+
+After setting configuration, verify:
+
+```bash
+# Check SQL Server connection
+docker exec airflow-scheduler python -c "
+import pyodbc
+conn_str = f'Driver={{ODBC Driver 17 for SQL Server}};Server={{os.getenv(\"SQL_SERVER\")}},{os.getenv(\"SQL_PORT\")};Database={{os.getenv(\"SQL_DB\")}};UID={{os.getenv(\"SQL_USER\")}};PWD={{os.getenv(\"SQL_PASSWORD\")}}'
+conn = pyodbc.connect(conn_str)
+print('✓ SQL Server OK')
+"
+
+# Check dbt
+docker exec airflow-scheduler dbt debug
+
+# Check Airbyte
+curl $AIRBYTE_API_URL/api/v1/health
+```
+
+---
+
+**Template Version**: 1.0.0  
+**Last Updated**: May 2026  
+**Status**: Production Ready ✅

@@ -1,0 +1,87 @@
+"""
+ATB BI Master ML Integration DAG
+
+This DAG integrates the ML pipeline into the main orchestration workflow.
+It triggers after data warehouse ETL completes and manages:
+  1. Feature engineering from warehouse
+  2. Model training & evaluation
+  3. SHAP explainability
+  4. Batch scoring
+  5. Results warehouse integration
+  6. Model monitoring & drift detection
+"""
+
+from datetime import datetime, timedelta
+from pathlib import Path
+import logging
+
+from airflow import DAG
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.operators.python import PythonOperator
+from airflow.utils.task_group import TaskGroup
+
+logger = logging.getLogger(__name__)
+
+default_args = {
+    "owner": "ATB BI Orchestration",
+    "depends_on_past": False,
+    "start_date": datetime(2024, 1, 1),
+    "email": ["admin@atb.com"],
+    "email_on_failure": True,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=10),
+}
+
+dag = DAG(
+    "atb_master_ml_integration",
+    default_args=default_args,
+    description="Master DAG: Warehouse ETL → ML Pipeline → Reporting",
+    schedule_interval="0 12 * * *",  # Daily at 12:00 UTC (after daily warehouse ETL at 02:00)
+    catchup=False,
+    tags=["ATB", "ML", "Integration", "Production"],
+    doc_md=__doc__,
+)
+
+
+def log_workflow_start(**context) -> None:
+    """Log workflow start for monitoring."""
+    logger.info("="*80)
+    logger.info("ATB BI ML Workflow Started")
+    logger.info(f"Execution Date: {context['execution_date']}")
+    logger.info("="*80)
+
+
+def log_workflow_complete(**context) -> None:
+    """Log workflow completion."""
+    logger.info("="*80)
+    logger.info("ATB BI ML Workflow Completed Successfully")
+    logger.info("="*80)
+
+
+# Task: Start logging
+start_task = PythonOperator(
+    task_id="log_workflow_start",
+    python_callable=log_workflow_start,
+    dag=dag,
+)
+
+# Task: Trigger ML Pipeline DAG
+trigger_ml_pipeline = TriggerDagRunOperator(
+    task_id="trigger_ml_pipeline",
+    trigger_dag_id="atb_ml_pipeline",
+    wait_for_completion=True,
+    poke_interval=60,  # Check every 60 seconds
+    dag=dag,
+    doc_md="Trigger the ML pipeline DAG and wait for completion"
+)
+
+# Task: End logging
+end_task = PythonOperator(
+    task_id="log_workflow_complete",
+    python_callable=log_workflow_complete,
+    dag=dag,
+    trigger_rule="none_failed_or_skipped"
+)
+
+# DAG flow
+start_task >> trigger_ml_pipeline >> end_task

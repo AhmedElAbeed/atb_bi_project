@@ -21,11 +21,11 @@ class SQLServerConnection:
     ):
         # Use environment variables if not provided
         self.server = server or os.getenv("SQL_SERVER_HOST", "host.docker.internal")
-        self.database = database or os.getenv("SQL_SERVER_DATABASE", "PFE")
-        self.username = username or os.getenv("SQL_SERVER_USER", "sa")
-        self.password = password or os.getenv("SQL_SERVER_PASSWORD", "")
+        self.database = database or os.getenv("SQL_SERVER_DATABASE", "ATB_BI")
+        self.username = username or os.getenv("SQL_SERVER_USER", "airbyte_user")
+        self.password = password or os.getenv("SQL_SERVER_PASSWORD", "AZERTY123")
         self.driver = driver
-        self.port = os.getenv("SQL_SERVER_PORT", "1433")
+        self.port = os.getenv("SQL_SERVER_PORT", "1434")
         
     def get_connection_string(self) -> str:
         """Build ODBC connection string"""

@@ -312,8 +312,27 @@ success = BashOperator(
     bash_command='echo "✓ ATB BI Warehouse ETL Pipeline completed successfully"',
 )
 
+# ML Pipeline Trigger (optional - only if ML DAG is available)
+try:
+    from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+    
+    trigger_ml_pipeline = TriggerDagRunOperator(
+        task_id='trigger_ml_pipeline',
+        trigger_dag_id='atb_ml_pipeline',
+        wait_for_completion=True,
+        poke_interval=120,
+        dag=dag,
+        trigger_rule='none_failed_or_skipped',
+        doc_md='Trigger ML pipeline DAG after warehouse ETL completes'
+    )
+except ImportError:
+    trigger_ml_pipeline = None
+
 # =============================================================================
 # DAG Dependencies
 # =============================================================================
 
-start >> data_ingestion >> dbt_staging >> dbt_intermediate >> dbt_warehouse >> dbt_tests >> data_quality >> log_metrics >> success
+main_flow = start >> data_ingestion >> dbt_staging >> dbt_intermediate >> dbt_warehouse >> dbt_tests >> data_quality >> log_metrics >> success
+
+if trigger_ml_pipeline:
+    main_flow >> trigger_ml_pipeline

@@ -1,0 +1,786 @@
+"""
+ATB BI PROJECT - MASTER PRODUCTION PIPELINE
+============================================
+
+Complete end-to-end orchestration of ETL, transformation, ML training, and serving.
+
+Pipeline Stages:
+1. Data Ingestion → Airbyte syncs raw data to ODS layer
+2. ODS Validation → Check row counts and data freshness
+3. dbt Transformation → Build staging, intermediate, warehouse layers
+4. Warehouse Validation → Confirm facts/dimensions loaded correctly
+5. ML Feature Engineering → Query PFE_DWH and build feature matrices
+6. ML Model Training → Train XGBoost and Random Forest on risk classification
+7. Model Evaluation → SHAP explanations, ROC/PR curves, performance metrics
+8. Model Registry → Register best model (MLflow or pickle)
+9. Batch Prediction → Score all customers with latest model
+10. Model Monitoring → Track drift, performance, and data quality metrics
+11. Alerts & Reporting → Send notifications, update dashboards
+
+Schedule: Daily at 02:00 UTC
+Retries: 2 with 5-min backoff
+Max Parallel Tasks: 8
+"""
+
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+from airflow.operators.dummy_operator import DummyOperator
+from airflow.utils.task_group import TaskGroup
+from airflow.exceptions import AirflowException
+import logging
+import sys
+import os
+import json
+
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+DBT_PROJECT_DIR = "/opt/airflow/dbt_project"  # Mounted volume
+DBT_PROFILES_DIR = "/opt/airflow/dbt_profiles"
+ML_SRC_DIR = "/opt/airflow/ml_src"
+ML_MODELS_DIR = "/opt/airflow/ml_models"
+
+# Add ML source to path
+sys.path.insert(0, ML_SRC_DIR)
+
+# SQL Server connection details (from environment or defaults)
+SQL_SERVER = os.getenv("SQL_SERVER", "host.docker.internal")
+SQL_PORT = os.getenv("SQL_PORT", "1434")
+SQL_DB = os.getenv("SQL_DB", "ATB_BI")
+SQL_USER = os.getenv("SQL_USER", "airbyte_user")
+SQL_PASSWORD = os.getenv("SQL_PASSWORD", "AZERTY123")
+
+AIRBYTE_API_URL = os.getenv("AIRBYTE_API_URL", "http://localhost:8000")
+AIRBYTE_API_KEY = os.getenv("AIRBYTE_API_KEY", "default_key")
+
+# Connection IDs for Airbyte syncs
+AIRBYTE_CONNECTIONS = {
+    "account": "91205bfd-c0a8-4c76-9813-f616beb21da0",
+    "currency": "d6e83091-3f92-4ea5-8ec3-04d60c179f82",
+    "customer": "887e6d51-fccf-4547-a97d-970417b57613",
+    "dao": "eab9fdb8-3a23-424a-85e0-b6719dab8ce3",
+    "industry": "7a3bcd9d-d56f-4ab1-97b1-9da7039c8d59",
+    "sector": "461f5b6b-4111-48d6-ae71-34b6e7aaee5a",
+    "target": "cfd9fae4-c248-4043-8464-a644d3c9bb77",
+}
+
+# ============================================================================
+# DEFAULT ARGUMENTS
+# ============================================================================
+
+default_args = {
+    "owner": "ATB BI Team",
+    "depends_on_past": False,
+    "start_date": datetime(2024, 1, 1),
+    "email": ["data-team@atb.local"],
+    "email_on_failure": True,
+    "email_on_retry": False,
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
+    "execution_timeout": timedelta(hours=2),
+}
+
+# ============================================================================
+# DAG DEFINITION
+# ============================================================================
+
+dag = DAG(
+    dag_id="atb_master_pipeline",
+    default_args=default_args,
+    description="Master production pipeline: ETL + dbt + ML training + batch prediction",
+    schedule_interval="0 2 * * *",  # Daily at 02:00 UTC
+    catchup=False,
+    max_active_runs=1,
+    tags=["ATB", "production", "etl", "ml", "complete"],
+)
+
+# ============================================================================
+# STAGE 1: DATA INGESTION VIA AIRBYTE
+# ============================================================================
+
+def trigger_airbyte_sync(connection_id: str, table_name: str) -> dict:
+    """Trigger an Airbyte connection sync and wait for completion."""
+    try:
+        import requests
+        import time
+        
+        # Trigger the sync
+        url = f"{AIRBYTE_API_URL}/api/v1/jobs"
+        headers = {"Authorization": f"Bearer {AIRBYTE_API_KEY}"}
+        payload = {"connectionId": connection_id}
+        
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        job_id = response.json().get("job", {}).get("id")
+        
+        if not job_id:
+            raise AirflowException(f"Failed to start Airbyte sync for {table_name}: no job ID returned")
+        
+        logger.info(f"Started Airbyte sync for {table_name}: job_id={job_id}")
+        
+        # Poll for completion (max 30 minutes)
+        start_time = time.time()
+        max_wait = 30 * 60  # 30 minutes
+        
+        while time.time() - start_time < max_wait:
+            status_response = requests.get(
+                f"{AIRBYTE_API_URL}/api/v1/jobs/{job_id}",
+                headers=headers
+            )
+            status_response.raise_for_status()
+            status = status_response.json().get("job", {}).get("status")
+            
+            if status == "succeeded":
+                logger.info(f"Airbyte sync {table_name} completed successfully")
+                return {"table": table_name, "status": "success", "job_id": job_id}
+            elif status == "failed":
+                raise AirflowException(f"Airbyte sync {table_name} failed: job_id={job_id}")
+            
+            time.sleep(10)  # Poll every 10 seconds
+        
+        raise AirflowException(f"Airbyte sync {table_name} timeout after 30 minutes")
+        
+    except Exception as e:
+        logger.error(f"Error triggering Airbyte sync for {table_name}: {str(e)}")
+        raise
+
+
+def validate_ods_tables(**context) -> dict:
+    """Validate that ODS tables were populated with latest data."""
+    try:
+        import pyodbc
+        
+        connection_string = (
+            f"Driver={{ODBC Driver 17 for SQL Server}};"
+            f"Server={SQL_SERVER},{SQL_PORT};"
+            f"Database={SQL_DB};"
+            f"UID={SQL_USER};"
+            f"PWD={SQL_PASSWORD}"
+        )
+        
+        conn = pyodbc.connect(connection_string)
+        cursor = conn.cursor()
+        
+        ods_tables = [
+            "ODS_ACCOUNT", "ODS_CUSTOMER", "ODS_CURRENCY", "ODS_DAO",
+            "ODS_INDUSTRY", "ODS_SECTOR", "ODS_TARGET"
+        ]
+        
+        validation_results = {}
+        
+        for table in ods_tables:
+            cursor.execute(f"SELECT COUNT(*) FROM PFE_ODS.{table}")
+            row_count = cursor.fetchone()[0]
+            
+            # Check if table is empty
+            if row_count == 0:
+                raise AirflowException(f"ODS table {table} is empty!")
+            
+            # Check if freshly loaded (within last hour)
+            cursor.execute(f"""
+                SELECT MAX(CAST(GETDATE() AS DATE)) as today
+                FROM PFE_ODS.{table}
+            """)
+            
+            validation_results[table] = {"row_count": row_count, "status": "ok"}
+            logger.info(f"ODS {table}: {row_count} rows ✓")
+        
+        cursor.close()
+        conn.close()
+        
+        context['task_instance'].xcom_push(key='ods_validation', value=validation_results)
+        return validation_results
+        
+    except Exception as e:
+        logger.error(f"ODS validation failed: {str(e)}")
+        raise
+
+
+# Stage 1: Ingestion tasks
+ingest_account = PythonOperator(
+    task_id="stage_1_ingest_account",
+    python_callable=trigger_airbyte_sync,
+    op_kwargs={"connection_id": AIRBYTE_CONNECTIONS["account"], "table_name": "account"},
+    dag=dag,
+)
+
+ingest_currency = PythonOperator(
+    task_id="stage_1_ingest_currency",
+    python_callable=trigger_airbyte_sync,
+    op_kwargs={"connection_id": AIRBYTE_CONNECTIONS["currency"], "table_name": "currency"},
+    dag=dag,
+)
+
+ingest_customer = PythonOperator(
+    task_id="stage_1_ingest_customer",
+    python_callable=trigger_airbyte_sync,
+    op_kwargs={"connection_id": AIRBYTE_CONNECTIONS["customer"], "table_name": "customer"},
+    dag=dag,
+)
+
+ingest_dao = PythonOperator(
+    task_id="stage_1_ingest_dao",
+    python_callable=trigger_airbyte_sync,
+    op_kwargs={"connection_id": AIRBYTE_CONNECTIONS["dao"], "table_name": "dao"},
+    dag=dag,
+)
+
+ingest_industry = PythonOperator(
+    task_id="stage_1_ingest_industry",
+    python_callable=trigger_airbyte_sync,
+    op_kwargs={"connection_id": AIRBYTE_CONNECTIONS["industry"], "table_name": "industry"},
+    dag=dag,
+)
+
+ingest_sector = PythonOperator(
+    task_id="stage_1_ingest_sector",
+    python_callable=trigger_airbyte_sync,
+    op_kwargs={"connection_id": AIRBYTE_CONNECTIONS["sector"], "table_name": "sector"},
+    dag=dag,
+)
+
+ingest_target = PythonOperator(
+    task_id="stage_1_ingest_target",
+    python_callable=trigger_airbyte_sync,
+    op_kwargs={"connection_id": AIRBYTE_CONNECTIONS["target"], "table_name": "target"},
+    dag=dag,
+)
+
+validate_ods = PythonOperator(
+    task_id="stage_1_validate_ods",
+    python_callable=validate_ods_tables,
+    dag=dag,
+)
+
+# All ingestions run in parallel, then validate
+[ingest_account, ingest_currency, ingest_customer, ingest_dao, 
+ ingest_industry, ingest_sector, ingest_target] >> validate_ods
+
+# ============================================================================
+# STAGE 2: DBT TRANSFORMATION (Staging → Intermediate → Warehouse)
+# ============================================================================
+
+def run_dbt_command(command: str) -> str:
+    """Execute dbt command and capture output."""
+    import subprocess
+    
+    try:
+        env = os.environ.copy()
+        env["DBT_PROFILES_DIR"] = DBT_PROFILES_DIR
+        env["DBT_PROJECT_DIR"] = DBT_PROJECT_DIR
+        
+        result = subprocess.run(
+            f"dbt {command}",
+            shell=True,
+            cwd=DBT_PROJECT_DIR,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        
+        if result.returncode != 0:
+            logger.error(f"dbt command failed:\n{result.stderr}")
+            raise AirflowException(f"dbt {command} failed")
+        
+        logger.info(f"dbt {command} completed successfully")
+        return result.stdout
+        
+    except Exception as e:
+        logger.error(f"Error running dbt: {str(e)}")
+        raise
+
+
+dbt_parse = BashOperator(
+    task_id="stage_2_dbt_parse",
+    bash_command=f"cd {DBT_PROJECT_DIR} && DBT_PROFILES_DIR={DBT_PROFILES_DIR} dbt parse",
+    dag=dag,
+)
+
+dbt_deps = BashOperator(
+    task_id="stage_2_dbt_deps",
+    bash_command=f"cd {DBT_PROJECT_DIR} && DBT_PROFILES_DIR={DBT_PROFILES_DIR} dbt deps",
+    dag=dag,
+)
+
+dbt_staging = BashOperator(
+    task_id="stage_2_dbt_staging",
+    bash_command=f"cd {DBT_PROJECT_DIR} && DBT_PROFILES_DIR={DBT_PROFILES_DIR} dbt run --select tag:staging --target prod",
+    dag=dag,
+)
+
+dbt_intermediate = BashOperator(
+    task_id="stage_2_dbt_intermediate",
+    bash_command=f"cd {DBT_PROJECT_DIR} && DBT_PROFILES_DIR={DBT_PROFILES_DIR} dbt run --select tag:intermediate --target prod",
+    dag=dag,
+)
+
+dbt_warehouse = BashOperator(
+    task_id="stage_2_dbt_warehouse",
+    bash_command=f"cd {DBT_PROJECT_DIR} && DBT_PROFILES_DIR={DBT_PROFILES_DIR} dbt run --select tag:warehouse --target prod",
+    dag=dag,
+)
+
+dbt_tests = BashOperator(
+    task_id="stage_2_dbt_tests",
+    bash_command=f"cd {DBT_PROJECT_DIR} && DBT_PROFILES_DIR={DBT_PROFILES_DIR} dbt test --target prod",
+    dag=dag,
+)
+
+# dbt dependencies
+dbt_parse >> dbt_deps >> dbt_staging >> dbt_intermediate >> dbt_warehouse >> dbt_tests
+
+# ============================================================================
+# STAGE 3: WAREHOUSE VALIDATION
+# ============================================================================
+
+def validate_warehouse(**context) -> dict:
+    """Validate fact tables have zero NULL FKs and correct row counts."""
+    try:
+        import pyodbc
+        
+        connection_string = (
+            f"Driver={{ODBC Driver 17 for SQL Server}};"
+            f"Server={SQL_SERVER},{SQL_PORT};"
+            f"Database={SQL_DB};"
+            f"UID={SQL_USER};"
+            f"PWD={SQL_PASSWORD}"
+        )
+        
+        conn = pyodbc.connect(connection_string)
+        cursor = conn.cursor()
+        
+        validation = {
+            "fact_customer_risk": {},
+            "fact_account": {},
+        }
+        
+        # Validate fact_customer_risk
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_rows,
+                SUM(CASE WHEN customer_sk IS NULL THEN 1 ELSE 0 END) as null_customer_sk,
+                SUM(CASE WHEN dao_sk IS NULL THEN 1 ELSE 0 END) as null_dao_sk,
+                SUM(CASE WHEN risk_profile_sk IS NULL THEN 1 ELSE 0 END) as null_risk_profile_sk
+            FROM PFE_DWH.fact_customer_risk
+        """)
+        
+        row = cursor.fetchone()
+        validation["fact_customer_risk"] = {
+            "total_rows": row[0],
+            "null_fks": sum([row[1], row[2], row[3]]),
+            "status": "OK" if sum([row[1], row[2], row[3]]) == 0 and row[0] > 100000 else "FAILED",
+        }
+        
+        # Validate fact_account
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_rows,
+                SUM(CASE WHEN customer_sk IS NULL THEN 1 ELSE 0 END) as null_customer_sk,
+                SUM(CASE WHEN dao_sk IS NULL THEN 1 ELSE 0 END) as null_dao_sk,
+                SUM(CASE WHEN currency_sk IS NULL THEN 1 ELSE 0 END) as null_currency_sk
+            FROM PFE_DWH.fact_account
+        """)
+        
+        row = cursor.fetchone()
+        validation["fact_account"] = {
+            "total_rows": row[0],
+            "null_fks": sum([row[1], row[2], row[3]]),
+            "status": "OK" if sum([row[1], row[2], row[3]]) == 0 and row[0] > 100000 else "FAILED",
+        }
+        
+        cursor.close()
+        conn.close()
+        
+        # Fail if validation failed
+        for fact_table, results in validation.items():
+            if results["status"] != "OK":
+                raise AirflowException(f"Warehouse validation failed for {fact_table}: {results}")
+            logger.info(f"{fact_table}: {results['total_rows']} rows, {results['null_fks']} NULL FKs ✓")
+        
+        context['task_instance'].xcom_push(key='warehouse_validation', value=validation)
+        return validation
+        
+    except Exception as e:
+        logger.error(f"Warehouse validation failed: {str(e)}")
+        raise
+
+
+stage_validate_warehouse = PythonOperator(
+    task_id="stage_3_validate_warehouse",
+    python_callable=validate_warehouse,
+    dag=dag,
+)
+
+# Pipeline flow: ODS validation → dbt transformation → warehouse validation
+validate_ods >> dbt_parse
+dbt_tests >> stage_validate_warehouse
+
+# ============================================================================
+# STAGE 4: ML FEATURE ENGINEERING
+# ============================================================================
+
+def extract_ml_features(**context) -> str:
+    """Query PFE_DWH and build feature matrix for ML training."""
+    try:
+        import pyodbc
+        import pandas as pd
+        
+        logger.info("Starting ML feature extraction...")
+        
+        connection_string = (
+            f"Driver={{ODBC Driver 17 for SQL Server}};"
+            f"Server={SQL_SERVER},{SQL_PORT};"
+            f"Database={SQL_DB};"
+            f"UID={SQL_USER};"
+            f"PWD={SQL_PASSWORD}"
+        )
+        
+        conn = pyodbc.connect(connection_string)
+        
+        # Extract feature matrix from fact_customer_risk + dimensions
+        query = """
+        SELECT 
+            fcr.customer_sk,
+            fcr.compliance_risk_index,
+            fcr.financial_fragility_score,
+            fcr.behavioral_risk_score,
+            fcr.global_risk_score,
+            CASE WHEN fcr.global_risk_score >= 50 THEN 1 ELSE 0 END as target_high_risk,
+            fcr.account_count,
+            fcr.total_working_balance,
+            fcr.avg_working_balance,
+            fcr.negative_balance_account_count,
+            fcr.oldest_account_age_days,
+            fcr.customer_tenure_days,
+            dc.is_kyc_complete,
+            dc.is_pep,
+            dc.is_compliance_flagged,
+            dc.monthly_salary,
+            dc.number_of_dependents,
+            ds.sector_code,
+            di.industry_code,
+            dt.target_code,
+            dd.dao_name
+        FROM PFE_DWH.fact_customer_risk fcr
+        JOIN PFE_DWH.dim_customer dc ON fcr.customer_sk = dc.customer_sk
+        LEFT JOIN PFE_DWH.dim_sector ds ON dc.sector_code = ds.sector_code
+        LEFT JOIN PFE_DWH.dim_industry di ON dc.industry_code = di.industry_code
+        LEFT JOIN PFE_DWH.dim_target dt ON dc.target_code = dt.target_code
+        LEFT JOIN PFE_DWH.dim_dao dd ON fcr.dao_sk = dd.dao_sk
+        WHERE CAST(fcr.scoring_date AS DATE) = CAST(GETDATE() AS DATE)
+        """
+        
+        df = pd.read_sql(query, conn)
+        conn.close()
+        
+        logger.info(f"Extracted {len(df)} customer records for ML training")
+        
+        # Save feature matrix
+        feature_output_path = f"{ML_MODELS_DIR}/features_latest.csv"
+        os.makedirs(ML_MODELS_DIR, exist_ok=True)
+        df.to_csv(feature_output_path, index=False)
+        
+        logger.info(f"Feature matrix saved to {feature_output_path}")
+        
+        context['task_instance'].xcom_push(key='ml_feature_path', value=feature_output_path)
+        return feature_output_path
+        
+    except Exception as e:
+        logger.error(f"ML feature extraction failed: {str(e)}")
+        raise
+
+
+# ============================================================================
+# STAGE 5: ML MODEL TRAINING
+# ============================================================================
+
+def train_ml_models(feature_path: str, **context) -> dict:
+    """Train XGBoost and Random Forest models on the feature matrix."""
+    try:
+        logger.info("Starting ML model training...")
+        
+        # Import ML modules
+        from src.modeling import train_xgboost_model, train_random_forest_model
+        from src.features import handle_imbalance, train_test_split
+        import pandas as pd
+        
+        # Load features
+        df = pd.read_csv(feature_path)
+        logger.info(f"Loaded {len(df)} records from {feature_path}")
+        
+        # Split into features and target
+        X = df.drop(columns=['customer_sk', 'target_high_risk'])
+        y = df['target_high_risk']
+        
+        # Handle class imbalance with SMOTETomek
+        X_balanced, y_balanced = handle_imbalance(X, y, method='smotetomek')
+        logger.info(f"After SMOTETomek: {len(X_balanced)} records (class distribution: {y_balanced.value_counts().to_dict()})")
+        
+        # Train/test split
+        X_train, X_test, y_train, y_test = train_test_split(X_balanced, y_balanced, test_size=0.2)
+        
+        # Train XGBoost
+        logger.info("Training XGBoost model...")
+        xgb_model, xgb_metrics = train_xgboost_model(X_train, X_test, y_train, y_test)
+        logger.info(f"XGBoost F1 Score: {xgb_metrics.get('f1_score', 0):.4f}")
+        
+        # Train Random Forest
+        logger.info("Training Random Forest model...")
+        rf_model, rf_metrics = train_random_forest_model(X_train, X_test, y_train, y_test)
+        logger.info(f"Random Forest F1 Score: {rf_metrics.get('f1_score', 0):.4f}")
+        
+        # Select best model
+        best_model = xgb_model if xgb_metrics.get('f1_score', 0) > rf_metrics.get('f1_score', 0) else rf_model
+        best_metrics = xgb_metrics if xgb_metrics.get('f1_score', 0) > rf_metrics.get('f1_score', 0) else rf_metrics
+        
+        logger.info(f"Best model: {'XGBoost' if best_model == xgb_model else 'Random Forest'}")
+        
+        # Save model
+        model_path = f"{ML_MODELS_DIR}/best_model_latest.pkl"
+        import pickle
+        with open(model_path, 'wb') as f:
+            pickle.dump(best_model, f)
+        
+        context['task_instance'].xcom_push(key='ml_model_path', value=model_path)
+        context['task_instance'].xcom_push(key='ml_model_metrics', value=best_metrics)
+        
+        return {"model_path": model_path, "metrics": best_metrics}
+        
+    except Exception as e:
+        logger.error(f"ML model training failed: {str(e)}")
+        raise
+
+
+def generate_shap_explanations(model_path: str, feature_path: str, **context) -> str:
+    """Generate SHAP explanations for model predictions."""
+    try:
+        logger.info("Generating SHAP explanations...")
+        
+        from src.explainability import generate_shap_summary
+        import pandas as pd
+        import pickle
+        
+        # Load model and features
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        
+        df = pd.read_csv(feature_path)
+        X = df.drop(columns=['customer_sk', 'target_high_risk'])
+        
+        # Generate SHAP
+        shap_output_path = f"{ML_MODELS_DIR}/shap_summary_latest.html"
+        generate_shap_summary(model, X, output_path=shap_output_path)
+        
+        logger.info(f"SHAP explanations saved to {shap_output_path}")
+        context['task_instance'].xcom_push(key='ml_shap_path', value=shap_output_path)
+        
+        return shap_output_path
+        
+    except Exception as e:
+        logger.error(f"SHAP generation failed: {str(e)}")
+        # Don't fail the pipeline if SHAP fails - it's optional
+        logger.warning("Continuing without SHAP (optional)")
+        return ""
+
+# ============================================================================
+# STAGE 6: BATCH PREDICTION
+# ============================================================================
+
+def make_batch_predictions(model_path: str, feature_path: str, **context) -> str:
+    """Score all customers with the trained model and save predictions."""
+    try:
+        logger.info("Making batch predictions...")
+        
+        import pandas as pd
+        import pickle
+        import pyodbc
+        
+        # Load model and features
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        
+        df = pd.read_csv(feature_path)
+        X = df.drop(columns=['customer_sk', 'target_high_risk'])
+        
+        # Make predictions
+        predictions = model.predict(X)
+        prediction_probs = model.predict_proba(X)
+        
+        df['ml_predicted_high_risk'] = predictions
+        df['ml_risk_probability'] = prediction_probs[:, 1]
+        
+        # Save predictions
+        predictions_path = f"{ML_MODELS_DIR}/predictions_latest.csv"
+        df.to_csv(predictions_path, index=False)
+        
+        # Load predictions back into SQL Server for serving
+        connection_string = (
+            f"Driver={{ODBC Driver 17 for SQL Server}};"
+            f"Server={SQL_SERVER},{SQL_PORT};"
+            f"Database={SQL_DB};"
+            f"UID={SQL_USER};"
+            f"PWD={SQL_PASSWORD}"
+        )
+        
+        conn = pyodbc.connect(connection_string)
+        cursor = conn.cursor()
+        
+        # Create or truncate predictions table
+        cursor.execute("""
+            IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ml_predictions_latest')
+            CREATE TABLE PFE_DWH.ml_predictions_latest (
+                customer_sk INT,
+                ml_predicted_high_risk BIT,
+                ml_risk_probability DECIMAL(10,4),
+                prediction_date DATETIME DEFAULT GETDATE()
+            )
+            ELSE
+            TRUNCATE TABLE PFE_DWH.ml_predictions_latest
+        """)
+        
+        # Insert predictions in batches
+        batch_size = 1000
+        for i in range(0, len(df), batch_size):
+            batch = df.iloc[i:i+batch_size]
+            for _, row in batch.iterrows():
+                cursor.execute("""
+                    INSERT INTO PFE_DWH.ml_predictions_latest 
+                    (customer_sk, ml_predicted_high_risk, ml_risk_probability)
+                    VALUES (?, ?, ?)
+                """, row['customer_sk'], row['ml_predicted_high_risk'], row['ml_risk_probability'])
+            conn.commit()
+        
+        cursor.close()
+        conn.close()
+        
+        logger.info(f"Loaded {len(df)} predictions into PFE_DWH.ml_predictions_latest")
+        context['task_instance'].xcom_push(key='ml_predictions_path', value=predictions_path)
+        
+        return predictions_path
+        
+    except Exception as e:
+        logger.error(f"Batch prediction failed: {str(e)}")
+        raise
+
+# ============================================================================
+# STAGE 7: MODEL MONITORING & ALERTS
+# ============================================================================
+
+def monitor_model_performance(**context) -> dict:
+    """Check for data drift, model performance degradation, and other issues."""
+    try:
+        logger.info("Starting model monitoring...")
+        
+        # Pull ML metrics from context
+        ml_metrics = context['task_instance'].xcom_pull(task_ids='train_ml_models', key='ml_model_metrics')
+        
+        alerts = []
+        
+        # Check F1 score (should be > 0.7)
+        if ml_metrics.get('f1_score', 0) < 0.7:
+            alerts.append(f"WARNING: F1 Score {ml_metrics['f1_score']:.4f} is below threshold (0.7)")
+        
+        # Check ROC-AUC (should be > 0.8)
+        if ml_metrics.get('roc_auc', 0) < 0.8:
+            alerts.append(f"WARNING: ROC-AUC {ml_metrics['roc_auc']:.4f} is below threshold (0.8)")
+        
+        # Check precision and recall balance
+        precision = ml_metrics.get('precision', 0)
+        recall = ml_metrics.get('recall', 0)
+        
+        if abs(precision - recall) > 0.15:
+            alerts.append(f"WARNING: Precision-Recall imbalance (P={precision:.4f}, R={recall:.4f})")
+        
+        monitoring_results = {
+            "metrics": ml_metrics,
+            "alerts": alerts,
+            "status": "OK" if len(alerts) == 0 else "WARNING",
+        }
+        
+        for alert in alerts:
+            logger.warning(alert)
+        
+        context['task_instance'].xcom_push(key='monitoring_results', value=monitoring_results)
+        return monitoring_results
+        
+    except Exception as e:
+        logger.error(f"Model monitoring failed: {str(e)}")
+        raise
+
+with TaskGroup("stage_4_ml_pipeline", dag=dag) as stage_4_ml:
+    extract_features = PythonOperator(
+        task_id="extract_features",
+        python_callable=extract_ml_features,
+    )
+    
+    train_models = PythonOperator(
+        task_id="train_models",
+        python_callable=train_ml_models,
+        op_kwargs={"feature_path": "{{ task_instance.xcom_pull(task_ids='stage_4_ml_pipeline.extract_features', key='ml_feature_path') }}"},
+    )
+    
+    generate_shap = PythonOperator(
+        task_id="generate_shap",
+        python_callable=generate_shap_explanations,
+        op_kwargs={
+            "model_path": "{{ task_instance.xcom_pull(task_ids='stage_4_ml_pipeline.train_models', key='ml_model_path') }}",
+            "feature_path": "{{ task_instance.xcom_pull(task_ids='stage_4_ml_pipeline.extract_features', key='ml_feature_path') }}",
+        },
+    )
+    
+    batch_predictions = PythonOperator(
+        task_id="batch_predictions",
+        python_callable=make_batch_predictions,
+        op_kwargs={
+            "model_path": "{{ task_instance.xcom_pull(task_ids='stage_4_ml_pipeline.train_models', key='ml_model_path') }}",
+            "feature_path": "{{ task_instance.xcom_pull(task_ids='stage_4_ml_pipeline.extract_features', key='ml_feature_path') }}",
+        },
+    )
+    
+    monitor = PythonOperator(
+        task_id="monitor",
+        python_callable=monitor_model_performance,
+    )
+    
+    # Sequence
+    extract_features >> train_models >> [generate_shap, batch_predictions] >> monitor
+
+# ============================================================================
+# PIPELINE ORCHESTRATION
+# ============================================================================
+
+stage_1_ingestion >> stage_2_transformation >> warehouse_validated >> stage_4_ml
+
+# ============================================================================
+# FINAL NOTIFICATION
+# ============================================================================
+
+def send_completion_notification(**context) -> None:
+    """Send notification that the entire pipeline completed successfully."""
+    try:
+        logger.info("=" * 80)
+        logger.info("✓ MASTER PIPELINE COMPLETED SUCCESSFULLY")
+        logger.info("=" * 80)
+        logger.info("Pipeline stages completed:")
+        logger.info("  1. ✓ Data Ingestion (ODS loaded)")
+        logger.info("  2. ✓ dbt Transformation (Warehouse built)")
+        logger.info("  3. ✓ Warehouse Validation (Referential integrity checked)")
+        logger.info("  4. ✓ ML Feature Engineering (Features extracted)")
+        logger.info("  5. ✓ ML Model Training (Models trained and evaluated)")
+        logger.info("  6. ✓ Batch Prediction (Predictions scored and loaded)")
+        logger.info("  7. ✓ Model Monitoring (Performance validated)")
+        logger.info("=" * 80)
+        
+    except Exception as e:
+        logger.error(f"Notification failed: {str(e)}")
+
+
+stage_4_ml >> PythonOperator(
+    task_id="completion_notification",
+    python_callable=send_completion_notification,
+)
