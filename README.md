@@ -67,7 +67,7 @@ Main outputs from risk layer:
 - dbt (transformations and modeling)
 - Microsoft SQL Server + SSMS
 - Python (scikit-learn, XGBoost, SHAP, imbalanced-learn)
-- Power BI
+- Apache Superset
 
 ## 4) Prerequisites
 
@@ -119,7 +119,7 @@ atb_bi_project/
 │   ├── outputs/
 │   └── requirements.txt
 ├── 5_reporting/
-│   └── powerbi/
+│   └── superset/
 ├── data/
 │   ├── raw/
 │   └── processed/
@@ -280,13 +280,16 @@ Include columns such as:
 - MODEL_VERSION
 - PREDICTION_DATE
 
-## 11) Reporting Layer (Power BI)
+## 11) Reporting Layer (Apache Superset)
 
-Build dashboards on top of PFE_DWH and PFE_ML:
+Build dashboards on top of `PFE_DWH` and the ML scoring table using Apache Superset:
 
-- Descriptive view: balances, segmentation, trends
-- Risk view: tier distribution, high-risk segments, branch risk heatmap
-- Predictive view: vulnerability probability and churn watchlist
+- Executive view: KPIs, trends, and top-risk watchlists
+- Segmentation view: employment, gender, sector, and branch breakdowns
+- Risk view: tier distribution, compliance gaps, branch heatmaps
+- Predictive view: probability scores, prediction confidence, and at-risk customers
+
+Reporting assets live in `5_reporting/superset/`.
 
 ## 12) End-to-End Runbook
 
@@ -296,7 +299,7 @@ Use this order every cycle:
 2. Run Airbyte ingestion to PFE_ODS
 3. Run dbt (run + test) to PFE_DWH
 4. Run ML pipeline and write to PFE_ML
-5. Refresh Power BI dataset
+5. Refresh Superset dashboards and cached datasets
 
 ## 13) Minimum Deliverables Checklist
 
@@ -308,7 +311,7 @@ Use this order every cycle:
 - ML model trained and evaluated
 - SHAP analysis exported
 - Predictions table updated
-- Power BI dashboard published
+- Superset dashboard published
 
 ## 14) Scientific References
 
@@ -325,6 +328,6 @@ Use this order every cycle:
 
 ## 15) Notes
 
-- Start simple if needed: prioritize SQL Server + dbt + Power BI first, then add Airflow and ML automation.
+- Start simple if needed: prioritize SQL Server + dbt + Apache Superset first, then add Airflow and ML automation.
 - Keep business logic (risk score formulas) in dbt SQL for transparency and traceability.
 - Version all configs, DAGs, and ML artifacts in Git.

@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release 3: Artificial Intelligence & Machine Learning - ATB BI Project</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-sub: #64748b;
+
+            /* Purple/Violet ML theme */
+            --ml-purple: #7c3aed;
+            --ml-purple-light: #f5f3ff;
+            --ml-purple-border: #ddd6fe;
+            --ml-badge-bg: #ede9fe;
+            --ml-badge-text: #5b21b6;
+
+            /* Blue for XGBoost */
+            --xgb-blue: #2563eb;
+            --xgb-blue-light: #eff6ff;
+            --xgb-blue-border: #bfdbfe;
+            --xgb-badge-bg: #dbeafe;
+            --xgb-badge-text: #1e40af;
+
+            /* Green for quality gates */
+            --gate-green: #10b981;
+            --gate-green-light: #ecfdf5;
+            --gate-green-border: #a7f3d0;
+            --gate-badge-bg: #d1fae5;
+            --gate-badge-text: #065f46;
+
+            /* Orange for SHAP */
+            --shap-orange: #ea580c;
+            --shap-orange-light: #fff7ed;
+            --shap-orange-border: #fed7aa;
+            --shap-badge-bg: #ffedd5;
+            --shap-badge-text: #9a3412;
+
+            --radius-main: 22px;
+            --radius-card: 14px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .slide-canvas {
+            width: 1600px;
+            background: var(--white);
+            border-radius: 28px;
+            padding: 38px 42px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.09), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        /* ── HEADER ── */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 18px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header-left h1 {
+            font-size: 27px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.4px;
+        }
+
+        .header-left p {
+            font-size: 13.5px;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .sprint-badge {
+            background: var(--ml-purple);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── MAIN LAYOUT: left sidebar + right area ── */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 290px 1fr;
+            gap: 22px;
+        }
+
+        /* ── LEFT SIDEBAR: CRISP-ML phases ── */
+        .crisp-sidebar {
+            background: var(--ml-purple-light);
+            border: 2px solid var(--ml-purple-border);
+            border-radius: var(--radius-main);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--ml-purple);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 10px;
+            border-bottom: 1.5px dashed var(--ml-purple-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crisp-step {
+            background: var(--white);
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-card);
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .crisp-step-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-num {
+            width: 22px;
+            height: 22px;
+            background: var(--ml-purple);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .step-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .step-detail {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            padding-left: 30px;
+            font-weight: 500;
+        }
+
+        /* ── RIGHT AREA: top row + bottom row ── */
+        .right-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* ── TOP ROW: Feature Engineering + Quality Gates ── */
+        .top-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Generic labelled box */
+        .feature-box,
+        .gate-box {
+            border-radius: var(--radius-main);
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .feature-box {
+            background: var(--white);
+            border: 2px solid var(--ml-purple);
+            box-shadow: 0 8px 20px -5px rgba(124, 58, 237, 0.05);
+        }
+
+        .gate-box {
+            background: var(--white);
+            border: 2px solid var(--gate-green);
+            box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.05);
+        }
+
+        .box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .box-title {
+            font-size: 14.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-box .box-title {
+            color: var(--ml-purple);
+        }
+
+        .gate-box .box-title {
+            color: var(--gate-green);
+        }
+
+        .us-pill {
+            padding: 3px 11px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .feature-box .us-pill {
+            background: var(--ml-badge-bg);
+            color: var(--ml-badge-text);
+        }
+
+        .gate-box .us-pill {
+            background: var(--gate-badge-bg);
+            color: var(--gate-badge-text);
+        }
+
+        /* Feature rows inside feature box */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+        }
+
+        .feature-tag {
+            background: var(--ml-purple-light);
+            border: 1px solid var(--ml-purple-border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .feature-tag-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--ml-purple);
+        }
+
+        .feature-tag-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Quality gates table */
+        .gate-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .gate-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 12px;
+            background: #fafafa;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .gate-row-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .gate-label {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .gate-threshold {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .gate-result {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--gate-green);
+            background: var(--gate-badge-bg);
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+        }
+
+        /* ── BOTTOM ROW: Dual-Model Production Architecture ── */
+        .arch-box {
+            background: var(--white);
+            border: 2px solid var(--xgb-blue);
+            border-radius: var(--radius-main);
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 8px 20px -5px rgba(37, 99, 235, 0.05);
+        }
+
+        .arch-box .box-title {
+            color: var(--xgb-blue);
+        }
+
+        .arch-box .us-pill {
+            background: var(--xgb-badge-bg);
+            color: var(--xgb-badge-text);
+        }
+
+        .model-cards-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .model-card {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-card);
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .model-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .model-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .model-role-badge {
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 800;
+        }
+
+        .model-card.xgb .model-role-badge {
+            background: var(--xgb-badge-bg);
+            color: var(--xgb-badge-text);
+        }
+
+        .model-card.shap .model-role-badge {
+            background: var(--shap-badge-bg);
+            color: var(--shap-badge-text);
+        }
+
+        .model-desc {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .model-metrics-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-sub);
+        }
+
+        .model-metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .model-metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .metric-value.green {
+            color: var(--gate-green);
+        }
+
+        .metric-value.orange {
+            color: var(--shap-orange);
+        }
+
+        .metric-value.blue {
+            color: var(--xgb-blue);
+        }
+
+        /* ── FOOTER ── */
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 14px;
+            border-top: 1.5px dashed #e2e8f0;
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .footer-stats {
+            display: flex;
+            gap: 28px;
+        }
+
+        .footer-stat span {
+            color: var(--text-main);
+            font-weight: 800;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide-canvas">
+
+        <!-- ── HEADER ── -->
+        <div class="slide-header">
+            <div class="header-left">
+                <h1>RELEASE 3 : ARTIFICIAL INTELLIGENCE & MACHINE LEARNING</h1>
+                <p>CRISP-ML Methodology • Feature Engineering (34 Variables) • XGBoost Production Classifier • SHAP
+                    Explainability • Disagreement Alerts</p>
+            </div>
+            <div class="sprint-badge">ARAB TUNISIAN BANK • SPRINT 4</div>
+        </div>
+
+        <!-- ── MAIN LAYOUT ── -->
+        <div class="main-layout">
+
+            <!-- ── LEFT: CRISP-ML Sidebar ── -->
+            <div class="crisp-sidebar">
+                <div class="sidebar-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                    CRISP-ML Lifecycle
+                </div>
+
+                <div class="crisp-step">
+                    <div class="crisp-step-row">
+                        <span class="step-num">1</span>
+                        <span class="step-name">Business Understanding</span>
+                    </div>
+                    <p class="step-detail">Dual-layer rules + ML architecture defined before any modelling.</p>
+                </div>
+
+                <div class="crisp-step">
+                    <div class="crisp-step-row">
+                        <span class="step-num">2</span>
+                        <span class="step-name">Data Understanding</span>
+                    </div>
+                    <p class="step-detail">EDA on 281k records: class imbalance (1.3% high-risk), leakage audit.</p>
+                </div>
+
+                <div class="crisp-step">
+                    <div class="crisp-step-row">
+                        <span class="step-num">3</span>
+                        <span class="step-name">Feature Engineering</span>
+                    </div>
+                    <p class="step-detail">34 features crafted; SMOTETomek balancing; score excluded to prevent leakage.
+                    </p>
+                </div>
+
+                <div class="crisp-step">
+                    <div class="crisp-step-row">
+                        <span class="step-num">4</span>
+                        <span class="step-name">Model Engineering</span>
+                    </div>
+                    <p class="step-detail">4 classifiers benchmarked via MLflow; XGBoost selected with F1 = 0.9545.</p>
+                </div>
+
+                <div class="crisp-step">
+                    <div class="crisp-step-row">
+                        <span class="step-num">5</span>
+                        <span class="step-name">Deployment & Monitoring</span>
+                    </div>
+                    <p class="step-detail">Airflow nightly retraining → MLflow Registry → Streamlit ML Risk
+                        Intelligence.</p>
+                </div>
+            </div>
+
+            <!-- ── RIGHT AREA ── -->
+            <div class="right-stack">
+
+                <!-- ── TOP ROW ── -->
+                <div class="top-row">
+
+                    <!-- Feature Engineering Box -->
+                    <div class="feature-box">
+                        <div class="box-header">
+                            <div class="box-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path
+                                        d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+                                </svg>
+                                Feature Engineering
+                            </div>
+                            <span class="us-pill">US 10 • 34 Variables</span>
+                        </div>
+                        <div class="feature-grid">
+                            <div class="feature-tag">
+                                <span class="feature-tag-name">Days since KYC Review</span>
+                                <span class="feature-tag-desc">Regulatory staleness signal</span>
+                            </div>
+                            <div class="feature-tag">
+                                <span class="feature-tag-name">Salary-to-Balance Ratio</span>
+                                <span class="feature-tag-desc">Income vs. liquidity pressure</span>
+                            </div>
+                            <div class="feature-tag">
+                                <span class="feature-tag-name">Has Overdraft (Binary)</span>
+                                <span class="feature-tag-desc">Any account in negative balance</span>
+                            </div>
+                            <div class="feature-tag">
+                                <span class="feature-tag-name">Is New Customer</span>
+                                <span class="feature-tag-desc">Tenure below 12 months</span>
+                            </div>
+                            <div class="feature-tag">
+                                <span class="feature-tag-name">PEP / KYC Flags</span>
+                                <span class="feature-tag-desc">Compliance binary indicators</span>
+                            </div>
+                            <div class="feature-tag">
+                                <span class="feature-tag-name">Balance per Account</span>
+                                <span class="feature-tag-desc">Avg. liquidity concentration</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quality Gates Box -->
+                    <div class="gate-box">
+                        <div class="box-header">
+                            <div class="box-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                    <polyline points="22 4 12 14.01 9 11.01" />
+                                </svg>
+                                Quality Gates (A Priori vs. Real)
+                            </div>
+                            <span class="us-pill">CRISP-ML • All Gates ✓</span>
+                        </div>
+                        <div class="gate-list">
+                            <div class="gate-row">
+                                <div class="gate-row-left">
+                                    <span class="gate-label">XGBoost — F1 Score</span>
+                                    <span class="gate-threshold">Target ≥ 0.70</span>
+                                </div>
+                                <span class="gate-result">Real: 0.9545</span>
+                            </div>
+                            <div class="gate-row">
+                                <div class="gate-row-left">
+                                    <span class="gate-label">XGBoost — ROC-AUC</span>
+                                    <span class="gate-threshold">Target ≥ 0.80</span>
+                                </div>
+                                <span class="gate-result">Real: 1.0000</span>
+                            </div>
+                            <div class="gate-row">
+                                <div class="gate-row-left">
+                                    <span class="gate-label">XGBoost — PR-AUC</span>
+                                    <span class="gate-threshold">Monitored (1.3% base rate)</span>
+                                </div>
+                                <span class="gate-result">Real: 1.0000</span>
+                            </div>
+                            <div class="gate-row">
+                                <div class="gate-row-left">
+                                    <span class="gate-label">Overfitting Gap (F1)</span>
+                                    <span class="gate-threshold">Target Train–Test Gap &lt; 10%</span>
+                                </div>
+                                <span class="gate-result">Real: &lt; 1%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ── BOTTOM ROW: Dual-Layer Production Architecture ── -->
+                <div class="arch-box">
+                    <div class="box-header">
+                        <div class="box-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <path d="M3 9h18M3 15h18M9 3v18" />
+                            </svg>
+                            Dual-Layer Production Architecture
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <span class="us-pill" style="background:#dbeafe; color:#1e40af;">US 11</span>
+                            <span class="us-pill" style="background:#dbeafe; color:#1e40af;">US 12</span>
+                            <span class="us-pill" style="background:#dbeafe; color:#1e40af;">US 14</span>
+                        </div>
+                    </div>
+
+                    <div class="model-cards-row">
+
+                        <!-- XGBoost Card -->
+                        <div class="model-card xgb">
+                            <div class="model-card-header">
+                                <span class="model-name">XGBoost Classifier</span>
+                                <span class="model-role-badge">Predictive Screening</span>
+                            </div>
+                            <p class="model-desc">Gradient boosting classifier trained on 34 leakage-safe features.
+                                Predicts P(high risk) where GRS ≥ 50. Catches non-linear patterns (stale KYC + overdraft
+                                + salary pressure) that deterministic rules miss.</p>
+                            <div>
+                                <div class="model-metrics-title" style="margin-bottom:6px;">FEATURE IMPORTANCE (SHAP)
+                                </div>
+                                <div class="model-metric-row">
+                                    <span class="metric-label">Balance per Account</span>
+                                    <span class="metric-value green">Top Driver</span>
+                                </div>
+                                <div class="model-metric-row">
+                                    <span class="metric-label">is_kyc_complete</span>
+                                    <span class="metric-value blue">Sharpest binary split</span>
+                                </div>
+                                <div class="model-metric-row">
+                                    <span class="metric-label">Salary-to-Balance Ratio</span>
+                                    <span class="metric-value orange">Financial fragility signal</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dual-Layer / Disagreement Alerts Card -->
+                        <div class="model-card shap">
+                            <div class="model-card-header">
+                                <span class="model-name">Dual-Layer Alerts & SHAP</span>
+                                <span class="model-role-badge"
+                                    style="background:var(--shap-badge-bg); color:var(--shap-badge-text);">Explainability</span>
+                            </div>
+                            <p class="model-desc">Rules engine (GRS) remains the official auditable score. XGBoost acts
+                                as a screening assistant — disagreement alerts flag customers where ML predicts HIGH but
+                                rules give LOW, with SHAP explaining each flag.</p>
+                            <div>
+                                <div class="model-metrics-title" style="margin-bottom:6px;">PRODUCTION MODEL SCORES
+                                </div>
+                                <div class="model-metric-row">
+                                    <span class="metric-label">F1 Score (test)</span>
+                                    <span class="metric-value green">0.9545</span>
+                                </div>
+                                <div class="model-metric-row">
+                                    <span class="metric-label">Recall — Zero missed high-risk</span>
+                                    <span class="metric-value green">1.0000</span>
+                                </div>
+                                <div class="model-metric-row">
+                                    <span class="metric-label">Decision Threshold (F1-optimised)</span>
+                                    <span class="metric-value blue">≈ 0.953</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── FOOTER ── -->
+        <div class="slide-footer">
+            <div class="footer-stats">
+                <div class="footer-stat">Methodology : <span>CRISP-ML (6 Phases)</span></div>
+                <div class="footer-stat">Model : <span>XGBoost · SMOTETomek · MLflow Tracking</span></div>
+                <div class="footer-stat">Integration : <span>Streamlit ML Risk Intelligence · Airflow Nightly
+                        Retraining</span></div>
+            </div>
+            <div>PFE ATB 2026 • Release 3</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

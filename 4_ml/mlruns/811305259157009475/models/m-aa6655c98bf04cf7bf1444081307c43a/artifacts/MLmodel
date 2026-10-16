@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Users/Ahmed/Desktop/atb_bi_project/4_ml/mlruns/811305259157009475/models/m-aa6655c98bf04cf7bf1444081307c43a/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.9
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.12.0
+model_id: m-aa6655c98bf04cf7bf1444081307c43a
+model_size_bytes: 412037
+model_uuid: m-aa6655c98bf04cf7bf1444081307c43a
+prompts: null
+run_id: 9de0bd0b1f804acfa96dfdb21cb3e42c
+utc_time_created: '2026-06-13 12:17:27.096663'

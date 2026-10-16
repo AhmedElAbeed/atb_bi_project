@@ -36,7 +36,7 @@ dag = DAG(
     "dag_ingestion",
     default_args=default_args,
     description="Ingestion DAG: Sync Airbyte connections and validate ODS",
-    schedule_interval="0 2 * * *",
+    schedule_interval=None,
     catchup=False,
     tags=["ATB", "ingestion", "airbyte"],
 )

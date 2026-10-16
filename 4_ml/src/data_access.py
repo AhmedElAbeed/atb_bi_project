@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
 
-from config import OUTPUT_DIR, PROJECT_ROOT, WarehouseConnection, build_sqlalchemy_uri
+from config import OUTPUT_DIR, PROJECT_ROOT, get_connection, build_sqlalchemy_uri
 
 
 FEATURE_QUERY = """
@@ -71,8 +71,18 @@ def make_engine(uri: str | None = None):
     return create_engine(uri or build_sqlalchemy_uri(), fast_executemany=True, pool_pre_ping=True)
 
 
+def test_sql_connection(uri: str | None = None) -> None:
+    """Verify SQL Server credentials before batch scoring."""
+    from sqlalchemy import text
+
+    engine = make_engine(uri)
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    print("SQL connection OK")
+
+
 def build_feature_query(schema: str | None = None) -> str:
-    warehouse_schema = schema or WarehouseConnection().schema
+    warehouse_schema = schema or get_connection().schema
     return FEATURE_QUERY.format(schema=warehouse_schema)
 
 
@@ -339,13 +349,18 @@ def load_feature_frame(uri: str | None = None, cache_name: str = "customer_risk_
     try:
         frame = load_dataframe(sql, uri=uri)
         frame.to_csv(cache_path, index=False)
+        print(f"Loaded {len(frame)} rows from SQL Server ({get_connection().schema})")
         return frame
-    except Exception:
+    except Exception as exc:
+        print(f"WARNING: SQL read failed ({exc}); trying cache/local fallback...")
         if cache_path.exists():
-            return _read_cached_frame(cache_path)
+            frame = _read_cached_frame(cache_path)
+            print(f"Using cached features: {cache_path} ({len(frame)} rows)")
+            return frame
         try:
             frame = _build_local_feature_frame()
             frame.to_csv(cache_path, index=False)
+            print(f"Built features from raw CSV files ({len(frame)} rows)")
             return frame
         except Exception:
             return _read_from_cache_or_local(cache_path)

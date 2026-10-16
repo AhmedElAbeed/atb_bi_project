@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/Ahmed/Desktop/atb_bi_project/4_ml/mlruns/811305259157009475/b384e01d193143e19bbe5ea9ed820f12/artifacts
+end_time: 1783762192017
+entry_point_name: ''
+experiment_id: '811305259157009475'
+lifecycle_stage: active
+run_id: b384e01d193143e19bbe5ea9ed820f12
+run_name: random_forest
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1783762191882
+status: 3
+tags: []
+user_id: Ahmed

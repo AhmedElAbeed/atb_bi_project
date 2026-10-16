@@ -1,6 +1,8 @@
 version: 2
 
 # Staging Layer - Minimal clean schema
+# Note: relationship tests use severity=warn because ODS has orphan FKs;
+# warehouse layers resolve these via UNKNOWN dimension records.
 models:
   - name: stg_account
     description: "Cleaned account data"
@@ -13,9 +15,10 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('stg_customer')
-                field: customer_id
+              to: ref('stg_customer')
+              field: customer_id
+              config:
+                severity: warn
       - name: category_code
         data_type: varchar(50)
       - name: currency_code
@@ -23,9 +26,8 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('stg_currency')
-                field: currency_code
+              to: ref('stg_currency')
+              field: currency_code
       - name: account_officer_id
         data_type: int
       - name: working_balance
@@ -42,8 +44,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [0, 1]
+              values: [0, 1]
       - name: account_age_days
         data_type: int
       - name: source_record_id
@@ -61,30 +62,34 @@ models:
         data_type: int
         tests:
           - relationships:
-              arguments:
-                to: ref('stg_sector')
-                field: sector_code
+              to: ref('stg_sector')
+              field: sector_code
+              config:
+                severity: warn
       - name: account_officer_id
         data_type: int
         tests:
           - relationships:
-              arguments:
-                to: ref('stg_dao')
-                field: account_officer_id
+              to: ref('stg_dao')
+              field: account_officer_id
+              config:
+                severity: warn
       - name: industry_code
         data_type: int
         tests:
           - relationships:
-              arguments:
-                to: ref('stg_industry')
-                field: industry_code
+              to: ref('stg_industry')
+              field: industry_code
+              config:
+                severity: warn
       - name: target_code
         data_type: int
         tests:
           - relationships:
-              arguments:
-                to: ref('stg_target')
-                field: target_code
+              to: ref('stg_target')
+              field: target_code
+              config:
+                severity: warn
       - name: customer_since_date
         data_type: date
         tests: [not_null]
@@ -93,8 +98,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [0, 1]
+              values: [0, 1]
       - name: monthly_salary
         data_type: decimal(18, 2)
       - name: number_of_dependents
@@ -104,29 +108,25 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [0, 1]
+              values: [0, 1]
       - name: is_pep
         data_type: bit
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [0, 1]
+              values: [0, 1]
       - name: is_compliance_flagged
         data_type: bit
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [0, 1]
+              values: [0, 1]
       - name: has_compliance_decision
         data_type: bit
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [0, 1]
+              values: [0, 1]
       - name: source_record_id
         data_type: varchar(255)
       - name: extracted_at_utc

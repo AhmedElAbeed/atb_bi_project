@@ -95,7 +95,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_customer')
                 field: customer_sk
       - name: dao_sk
@@ -103,7 +102,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_dao')
                 field: dao_sk
       - name: currency_sk
@@ -111,7 +109,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_currency')
                 field: currency_sk
       - name: sector_sk
@@ -119,7 +116,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_sector')
                 field: sector_sk
       - name: industry_sk
@@ -127,7 +123,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_industry')
                 field: industry_sk
       - name: target_sk
@@ -135,7 +130,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_target')
                 field: target_sk
       - name: opening_date_sk
@@ -143,7 +137,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_date')
                 field: date_sk
       - name: load_date_sk
@@ -151,7 +144,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_date')
                 field: date_sk
 
@@ -166,7 +158,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_customer')
                 field: customer_sk
       - name: risk_profile_sk
@@ -174,7 +165,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_risk_profile')
                 field: risk_profile_sk
       - name: dao_sk
@@ -182,7 +172,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_dao')
                 field: dao_sk
       - name: sector_sk
@@ -190,7 +179,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_sector')
                 field: sector_sk
       - name: industry_sk
@@ -198,7 +186,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_industry')
                 field: industry_sk
       - name: target_sk
@@ -206,7 +193,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_target')
                 field: target_sk
       - name: scoring_date_sk
@@ -214,7 +200,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_date')
                 field: date_sk
       - name: load_date_sk
@@ -222,7 +207,6 @@ models:
         tests:
           - not_null
           - relationships:
-              arguments:
                 to: ref('dim_date')
                 field: date_sk
       - name: account_officer_id

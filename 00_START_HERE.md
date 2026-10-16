@@ -182,7 +182,7 @@ SQL Server DWH Schema (PFE_DWH)
     ├─ Risk classification models
     ├─ Churn prediction
     ↓
-[5_reporting] Power BI (Phase 5 - Ready)
+[5_reporting] Apache Superset (Phase 5 - Ready)
     ├─ Customer analytics dashboards
     ├─ Risk profile dashboards
     ├─ Account performance reports
@@ -300,11 +300,11 @@ Full troubleshooting guide in: `ORCHESTRATION_GUIDE.md` (Troubleshooting section
 - **Tasks**: Feature engineering, model training, predictions
 - **Deliverable**: ML models in PFE_ML schema
 
-### Phase 5: Power BI Reporting (Ready to Start)
+### Phase 5: Apache Superset Reporting (Ready to Start)
 - **Timeline**: 2-3 weeks (can run parallel with Phase 4)
-- **Location**: `5_reporting/powerbi/`
-- **Tasks**: Dashboard design, analytics, reporting
-- **Deliverable**: Interactive dashboards connected to PFE_DWH
+- **Location**: `5_reporting/superset/`
+- **Tasks**: Dashboard design, curated views, reporting
+- **Deliverable**: Interactive dashboards connected to `PFE_DWH`
 
 ---
 

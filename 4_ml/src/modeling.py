@@ -10,8 +10,9 @@ import pandas as pd
 from imblearn.combine import SMOTETomek
 from imblearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
@@ -24,10 +25,13 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
 
 from config import MODEL_DIR, MLFLOW_EXPERIMENT_NAME, MLFLOW_TRACKING_URI, RANDOM_STATE
+
+MODEL_REGISTRY_NAME = "atb_customer_risk_classifier"
+PRODUCTION_MODEL = "xgboost"
 
 
 @dataclass(frozen=True)
@@ -37,10 +41,18 @@ class ModelSpec:
     param_distributions: Dict[str, Any]
 
 
-def build_preprocessor(numeric_features: list[str], categorical_features: list[str]) -> ColumnTransformer:
+def build_preprocessor(
+    numeric_features: list[str],
+    categorical_features: list[str],
+    *,
+    scale_numeric: bool = False,
+) -> ColumnTransformer:
+    numeric_steps: list[tuple[str, Any]] = [("imputer", SimpleImputer(strategy="median"))]
+    if scale_numeric:
+        numeric_steps.append(("scaler", StandardScaler()))
     return ColumnTransformer(
         transformers=[
-            ("numeric", SimpleImputer(strategy="median"), numeric_features),
+            ("numeric", Pipeline(steps=numeric_steps), numeric_features),
             (
                 "categorical",
                 Pipeline(
@@ -108,9 +120,56 @@ def build_model_specs(numeric_features: list[str], categorical_features: list[st
         "model__max_features": ["sqrt", "log2", 0.5],
         "model__class_weight": [None, "balanced"],
     }
+
+    et_preprocessor = build_preprocessor(numeric_features, categorical_features)
+    et_pipeline = Pipeline(
+        steps=[
+            ("preprocessor", et_preprocessor),
+            ("sampler", SMOTETomek(random_state=RANDOM_STATE)),
+            (
+                "model",
+                ExtraTreesClassifier(
+                    random_state=RANDOM_STATE,
+                    n_jobs=-1,
+                ),
+            ),
+        ]
+    )
+    et_params = {
+        "model__n_estimators": [300, 500, 800],
+        "model__max_depth": [None, 8, 12, 16],
+        "model__min_samples_split": [2, 5, 10],
+        "model__min_samples_leaf": [1, 2, 4],
+        "model__max_features": ["sqrt", "log2", 0.5],
+        "model__class_weight": [None, "balanced"],
+    }
+
+    lr_preprocessor = build_preprocessor(numeric_features, categorical_features, scale_numeric=True)
+    lr_pipeline = Pipeline(
+        steps=[
+            ("preprocessor", lr_preprocessor),
+            ("sampler", SMOTETomek(random_state=RANDOM_STATE)),
+            (
+                "model",
+                LogisticRegression(
+                    random_state=RANDOM_STATE,
+                    max_iter=1000,
+                    n_jobs=-1,
+                ),
+            ),
+        ]
+    )
+    lr_params = {
+        "model__C": [0.01, 0.1, 1, 10],
+        "model__solver": ["lbfgs", "saga"],
+        "model__class_weight": [None, "balanced"],
+    }
+
     return [
         ModelSpec(name="xgboost", pipeline=xgb_pipeline, param_distributions=xgb_params),
         ModelSpec(name="random_forest", pipeline=rf_pipeline, param_distributions=rf_params),
+        ModelSpec(name="extra_trees", pipeline=et_pipeline, param_distributions=et_params),
+        ModelSpec(name="logistic_regression", pipeline=lr_pipeline, param_distributions=lr_params),
     ]
 
 
@@ -171,6 +230,7 @@ def log_metrics_and_artifacts(
     metrics: dict[str, float],
     param_summary: dict[str, Any],
     artifact_filename: str,
+    register: bool = False,
 ) -> str:
     start_mlflow_run()
     with mlflow.start_run(run_name=model_name):
@@ -178,4 +238,61 @@ def log_metrics_and_artifacts(
         mlflow.log_metrics(metrics)
         artifact_path = save_model(best_model, artifact_filename)
         mlflow.log_artifact(artifact_path)
+        if register:
+            mlflow.sklearn.log_model(
+                best_model,
+                artifact_path="sklearn_model",
+                registered_model_name=MODEL_REGISTRY_NAME,
+            )
     return artifact_path
+
+
+def register_model_to_production(
+    model_name: str,
+    best_model: Any,
+    metrics: dict[str, float],
+    param_summary: dict[str, Any],
+    artifact_filename: str,
+    registry_name: str = MODEL_REGISTRY_NAME,
+) -> dict[str, Any]:
+    """Log model to MLflow, register it, and promote to Production."""
+    start_mlflow_run()
+    run_id: str | None = None
+    version: str | None = None
+
+    with mlflow.start_run(run_name=f"{model_name}_production") as run:
+        run_id = run.info.run_id
+        mlflow.log_params(param_summary)
+        mlflow.log_metrics(metrics)
+        artifact_path = save_model(best_model, artifact_filename)
+        mlflow.log_artifact(artifact_path)
+        model_info = mlflow.sklearn.log_model(
+            best_model,
+            artifact_path="sklearn_model",
+            registered_model_name=registry_name,
+        )
+
+    model_uri = f"runs:/{run_id}/sklearn_model"
+    version = str(getattr(model_info, "registered_model_version", None) or "1")
+    if getattr(model_info, "registered_model_version", None) is None:
+        registered = mlflow.register_model(model_uri=model_uri, name=registry_name)
+        version = str(registered.version)
+
+    from mlflow.tracking import MlflowClient
+
+    client = MlflowClient()
+    client.transition_model_version_stage(
+        name=registry_name,
+        version=version,
+        stage="Production",
+        archive_existing_versions=True,
+    )
+
+    return {
+        "registry_name": registry_name,
+        "version": version,
+        "run_id": run_id,
+        "model_uri": model_uri,
+        "artifact_path": artifact_path,
+        "stage": "Production",
+    }

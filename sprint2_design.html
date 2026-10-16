@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint 2 : Orchestration Engine & Data Quality - ATB BI Project</title>
+    <!-- Modern Typography: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-sub: #64748b;
+
+            /* Sprint 2 Theme: Emerald Green / Teal */
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #ecfdf5;
+            --primary-border: #a7f3d0;
+            --badge-green-bg: #d1fae5;
+            --badge-green-text: #065f46;
+
+            --tag-bg: #f1f5f9;
+            --tag-text: #475569;
+            --tag-border: #e2e8f0;
+
+            --shadow-card: 0 10px 25px -5px rgba(5, 150, 105, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            --shadow-hover: 0 20px 35px -10px rgba(5, 150, 105, 0.12), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+            --radius-main: 24px;
+            --radius-card: 18px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Widescreen 16:9 Canva Presentation Canvas */
+        .slide-canvas {
+            width: 1600px;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 48px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Header Bar */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .project-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--primary);
+        }
+
+        .project-tag-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 4px var(--badge-green-bg);
+        }
+
+        .sprint-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sprint-subtitle {
+            font-size: 15px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .header-right-pill {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1.5px solid var(--primary-border);
+            padding: 8px 20px;
+            border-radius: var(--radius-pill);
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(5, 150, 105, 0.06);
+        }
+
+        /* Sprint Container Box */
+        .sprint-box {
+            background: #f8fafc;
+            border: 2px solid var(--primary-border);
+            border-radius: var(--radius-main);
+            padding: 32px;
+            position: relative;
+        }
+
+        .sprint-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .sprint-box-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .box-badge {
+            background: var(--badge-green-bg);
+            color: var(--badge-green-text);
+            padding: 6px 16px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        /* HORIZONTAL CARDS GRID (3 Columns Side-by-Side) */
+        .cards-horizontal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        /* Single Card Styling */
+        .us-card {
+            background: var(--card-bg);
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-card);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .us-card:hover {
+            border-color: var(--primary-border);
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-3px);
+        }
+
+        .card-top-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bullet-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 3px var(--badge-green-bg);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.2px;
+            line-height: 1.35;
+        }
+
+        .us-tag-badge {
+            background: var(--badge-green-bg);
+            color: var(--badge-green-text);
+            font-size: 12px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .card-description {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .card-bullet-points {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .bullet-item {
+            font-size: 13px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .bullet-item::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .card-bottom-tags {
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .tags-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tech-pill {
+            background-color: var(--tag-bg);
+            color: var(--tag-text);
+            border: 1px solid var(--tag-border);
+            padding: 5px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        /* Slide Footer Metadata */
+        .slide-footer {
+            margin-top: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 20px;
+            border-top: 1.5px dashed #e2e8f0;
+        }
+
+        .footer-metric {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+        }
+
+        .metric-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        .metric-item span {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .flow-next-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            color: var(--text-main);
+            padding: 8px 20px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid #cbd5e1;
+        }
+
+        .flow-next-pill svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Main Presentation Slide Canvas -->
+    <div class="slide-canvas">
+
+        <!-- Header Bar -->
+        <div class="slide-header">
+            <div class="header-left">
+                <div class="project-tag">
+                    <span class="project-tag-dot"></span>
+                    ATB BI PLATFORM • RELEASE 1
+                </div>
+                <h1 class="sprint-title">
+                    SPRINT 2 : AUTOMATED ELT ORCHESTRATION ENGINE
+                </h1>
+                <p class="sprint-subtitle">
+                    Apache Airflow Docker stack, automated nightly ELT pipeline, data quality checks, and fault
+                    tolerance
+                </p>
+            </div>
+            <div class="header-right-pill">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                Analytics & Automation
+            </div>
+        </div>
+
+        <!-- Sprint Content Box -->
+        <div class="sprint-box">
+
+            <div class="sprint-box-header">
+                <div class="sprint-box-title">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    </svg>
+                    Sprint Backlog — Sprint 2
+                </div>
+                <div class="box-badge">Release 1 • Data Engine</div>
+            </div>
+
+            <!-- HORIZONTAL 3-COLUMN CARDS GRID -->
+            <div class="cards-horizontal-grid">
+
+                <!-- User Story 3 -->
+                <div class="us-card">
+                    <div class="card-top-content">
+                        <div class="card-header-row">
+                            <div class="card-title-group">
+                                <span class="bullet-dot"></span>
+                                <h2 class="card-title">Automated ELT Pipeline (Master DAG)</h2>
+                            </div>
+                            <span class="us-tag-badge">US 3</span>
+                        </div>
+                        <p class="card-description">
+                            Automate end-to-end data pipeline (Airbyte -> dbt -> DWH) every night at 02:00 UTC.
+                        </p>
+                        <div class="card-bullet-points">
+                            <div class="bullet-item">Daily 02:00 UTC execution schedule</div>
+                            <div class="bullet-item">9-stage sequential ingestion & ELT flow</div>
+                            <div class="bullet-item">Automated data delivery every morning</div>
+                        </div>
+                    </div>
+                    <div class="card-bottom-tags">
+                        <div class="tags-row">
+                            <span class="tech-pill">Apache Airflow 2.9.1</span>
+                            <span class="tech-pill">Docker Compose</span>
+                            <span class="tech-pill">Master DAG</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Multi-DAG Ecosystem -->
+                <div class="us-card">
+                    <div class="card-top-content">
+                        <div class="card-header-row">
+                            <div class="card-title-group">
+                                <span class="bullet-dot"></span>
+                                <h2 class="card-title">Multi-DAGs & XGBoost ML Retraining</h2>
+                            </div>
+                            <span class="us-tag-badge">DAGs</span>
+                        </div>
+                        <p class="card-description">
+                            Structure 4 specialized DAGs with automated Sunday XGBoost model retraining.
+                        </p>
+                        <div class="card-bullet-points">
+                            <div class="bullet-item">4 DAGs: Master, Airbyte, dbt, ML</div>
+                            <div class="bullet-item">Automated Sunday XGBoost retraining</div>
+                            <div class="bullet-item">PostgreSQL state & log persistence</div>
+                        </div>
+                    </div>
+                    <div class="card-bottom-tags">
+                        <div class="tags-row">
+                            <span class="tech-pill">4 DAGs Ecosystem</span>
+                            <span class="tech-pill">XGBoost Retraining</span>
+                            <span class="tech-pill">MLflow Store</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Quality & Fault Tolerance -->
+                <div class="us-card">
+                    <div class="card-top-content">
+                        <div class="card-header-row">
+                            <div class="card-title-group">
+                                <span class="bullet-dot"></span>
+                                <h2 class="card-title">Data Quality & Fault Tolerance</h2>
+                            </div>
+                            <span class="us-tag-badge">Quality</span>
+                        </div>
+                        <p class="card-description">
+                            Automated data integrity validation and resilient pipeline failure management.
+                        </p>
+                        <div class="card-bullet-points">
+                            <div class="bullet-item">Referential integrity check (zero-NULL rules)</div>
+                            <div class="bullet-item">Minimum data volume anomaly detection</div>
+                            <div class="bullet-item">Fault tolerance & secure variable store</div>
+                        </div>
+                    </div>
+                    <div class="card-bottom-tags">
+                        <div class="tags-row">
+                            <span class="tech-pill">Data Quality Rules</span>
+                            <span class="tech-pill">Referential Integrity</span>
+                            <span class="tech-pill">Fault Tolerance</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Footer / Flow Indicator -->
+        <div class="slide-footer">
+            <div class="footer-metric">
+                <div class="metric-item">
+                    Schedule : <span>Daily 02:00 UTC</span>
+                </div>
+                <div class="metric-item">
+                    Stack : <span>4 Docker Services</span>
+                </div>
+                <div class="metric-item">
+                    Quality : <span>Zero-NULL Rules Enforced</span>
+                </div>
+            </div>
+
+            <div class="flow-next-pill">
+                <span>ORCHESTRATED DATA</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

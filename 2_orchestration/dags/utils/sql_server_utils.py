@@ -93,13 +93,33 @@ class SQLServerConnection:
         return result[0][0] if result else 0
 
     def validate_table_exists(self, schema: str, table: str) -> bool:
-        """Check if a table exists"""
+        """Check if a table exists (case-insensitive name match)."""
         query = (
             "SELECT 1 FROM INFORMATION_SCHEMA.TABLES "
-            f"WHERE TABLE_SCHEMA = '{schema}' AND TABLE_NAME = '{table}'"
+            f"WHERE TABLE_SCHEMA = '{schema}' AND TABLE_NAME = ?"
         )
-        result = self.execute_query(query)
-        return len(result) > 0
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute(query, table)
+                return cursor.fetchone() is not None
+            finally:
+                cursor.close()
+
+    def resolve_table_name(self, schema: str, table: str) -> Optional[str]:
+        """Return the actual table name as stored in SQL Server."""
+        query = (
+            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
+            f"WHERE TABLE_SCHEMA = '{schema}' AND TABLE_NAME = ?"
+        )
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute(query, table)
+                row = cursor.fetchone()
+                return row[0] if row else None
+            finally:
+                cursor.close()
 
     def get_column_info(self, schema: str, table: str) -> Dict:
         """Get column information for a table"""
@@ -149,18 +169,32 @@ class SQLServerConnection:
                 cursor.close()
 
 
-# Expected row counts for validation (adjust based on your data)
+# ODS tables loaded by Airbyte (PFE_ODS schema)
 EXPECTED_ROW_COUNTS = {
     "PFE_ODS": {
-        "ACCOUNT": {"min": 1000, "max": 1000000},
-        "CUSTOMER": {"min": 500, "max": 500000},
-        "CURRENCY": {"min": 1, "max": 1000},
-        "DAO": {"min": 1, "max": 10000},
-        "INDUSTRY": {"min": 1, "max": 1000},
-        "SECTOR": {"min": 1, "max": 1000},
-        "TARGET": {"min": 1, "max": 10000},
+        "ODS_ACCOUNT": {"min": 1000, "max": 2_000_000},
+        "ODS_CUSTOMER": {"min": 500, "max": 1_000_000},
+        "ODS_CURRENCY": {"min": 1, "max": 1000},
+        "ODS_DAO": {"min": 1, "max": 10000},
+        "ODS_INDUSTRY": {"min": 1, "max": 1000},
+        "ODS_SECTOR": {"min": 1, "max": 1000},
+        "ODS_TARGET": {"min": 1, "max": 10000},
     }
 }
+
+# Warehouse tables built by dbt (PFE_DWH schema)
+REQUIRED_DWH_TABLES = [
+    "dim_customer",
+    "dim_dao",
+    "dim_date",
+    "dim_sector",
+    "dim_industry",
+    "dim_currency",
+    "dim_target",
+    "dim_risk_profile",
+    "fact_account",
+    "fact_customer_risk",
+]
 
 
 def validate_ods_tables() -> bool:
@@ -191,34 +225,27 @@ def validate_ods_tables() -> bool:
 
 
 def validate_dwh_tables() -> bool:
-    """Validate that DWH tables are populated"""
+    """Validate that PFE_DWH dimension and fact tables exist and have data."""
     db = SQLServerConnection()
-    
-    required_tables = {
-        "PFE_DWH": [
-            "DIM_CUSTOMER", "DIM_BRANCH", "DIM_DATE", "DIM_SECTOR",
-            "DIM_INDUSTRY", "DIM_CURRENCY", "DIM_TARGET", "DIM_RISK_PROFILE",
-            "FAIT_ACCOUNT", "FAIT_CUSTOMER_RISK"
-        ]
-    }
-    
     all_valid = True
-    for table_name in required_tables["PFE_DWH"]:
+
+    for table_name in REQUIRED_DWH_TABLES:
         try:
-            if not db.validate_table_exists("PFE_DWH", table_name):
+            resolved = db.resolve_table_name("PFE_DWH", table_name)
+            if not resolved:
                 logger.error(f"Table {table_name} does not exist in PFE_DWH")
                 all_valid = False
                 continue
-            
-            count = db.get_row_count("PFE_DWH", table_name)
+
+            count = db.get_row_count("PFE_DWH", resolved)
             if count > 0:
-                logger.info(f"✓ {table_name}: {count} rows")
+                logger.info(f"✓ {resolved}: {count:,} rows")
             else:
-                logger.warning(f"✗ {table_name}: {count} rows (empty)")
+                logger.warning(f"✗ {resolved}: 0 rows (empty)")
                 all_valid = False
-                
+
         except Exception as e:
             logger.error(f"Error validating {table_name}: {e}")
             all_valid = False
-    
+
     return all_valid

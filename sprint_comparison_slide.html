@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint 1 & Sprint 2 - ATB BI Project Presentation</title>
+    <!-- Modern Typography: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-sub: #64748b;
+
+            /* Sprint 1 Colors */
+            --s1-primary: #2563eb;
+            --s1-light: #eff6ff;
+            --s1-border: #bfdbfe;
+            --s1-badge-bg: #dbeafe;
+            --s1-badge-text: #1e40af;
+
+            /* Sprint 2 Colors */
+            --s2-primary: #059669;
+            --s2-light: #ecfdf5;
+            --s2-border: #a7f3d0;
+            --s2-badge-bg: #d1fae5;
+            --s2-badge-text: #065f46;
+
+            --tag-bg: #f1f5f9;
+            --tag-text: #475569;
+            --tag-border: #e2e8f0;
+
+            --radius-main: 22px;
+            --radius-card: 14px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Full 16:9 Presentation Canvas */
+        .slide-canvas {
+            width: 1600px;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            position: relative;
+        }
+
+        /* Top Header */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 18px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header-title-group h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .header-title-group p {
+            font-size: 14px;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .atb-badge {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Side by Side Grid Layout */
+        .sprints-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        /* Sprint Columns */
+        .sprint-column {
+            background: #f8fafc;
+            border-radius: var(--radius-main);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .sprint-column.sprint-1 {
+            border: 2px solid var(--s1-border);
+        }
+
+        .sprint-column.sprint-2 {
+            border: 2px solid var(--s2-border);
+        }
+
+        /* Column Header */
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .column-title {
+            font-size: 19px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sprint-1 .column-title {
+            color: var(--s1-primary);
+        }
+
+        .sprint-2 .column-title {
+            color: var(--s2-primary);
+        }
+
+        .pill-badge {
+            padding: 6px 14px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .sprint-1 .pill-badge {
+            background: var(--s1-badge-bg);
+            color: var(--s1-badge-text);
+        }
+
+        .sprint-2 .pill-badge {
+            background: var(--s2-badge-bg);
+            color: var(--s2-badge-text);
+        }
+
+        /* Cards inside Column */
+        .us-card {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-card);
+            padding: 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .sprint-1 .dot {
+            background-color: var(--s1-primary);
+        }
+
+        .sprint-2 .dot {
+            background-color: var(--s2-primary);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .us-code {
+            font-size: 12px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+
+        .sprint-1 .us-code {
+            background: var(--s1-badge-bg);
+            color: var(--s1-badge-text);
+        }
+
+        .sprint-2 .us-code {
+            background: var(--s2-badge-bg);
+            color: var(--s2-badge-text);
+        }
+
+        .card-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            font-weight: 500;
+            padding-left: 20px;
+        }
+
+        .tags-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-left: 20px;
+        }
+
+        .tech-pill {
+            background: var(--tag-bg);
+            color: var(--tag-text);
+            border: 1px solid var(--tag-border);
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+
+        /* Center Arrow Divider */
+        .flow-arrow-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .arrow-circle {
+            width: 44px;
+            height: 44px;
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .arrow-circle svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide-canvas">
+        <!-- Header -->
+        <div class="slide-header">
+            <div class="header-title-group">
+                <h1>ATB BI Platform — Release 1 Overview</h1>
+                <p>Functional and technical deliverables for Sprint 1 & Sprint 2</p>
+            </div>
+            <div class="atb-badge">ARAB TUNISIAN BANK • PFE 2026</div>
+        </div>
+
+        <!-- Grid -->
+        <div class="sprints-grid">
+
+            <!-- Sprint 1 Column -->
+            <div class="sprint-column sprint-1">
+                <div class="column-header">
+                    <h2 class="column-title">
+                        Sprint 1 : Security & Profiles
+                    </h2>
+                    <span class="pill-badge">Foundations</span>
+                </div>
+
+                <!-- US 1 -->
+                <div class="us-card">
+                    <div class="card-top">
+                        <div class="card-title-group">
+                            <span class="dot"></span>
+                            <h3 class="card-title">Authentication & RBAC Gateway</h3>
+                        </div>
+                        <span class="us-code">US 1</span>
+                    </div>
+                    <p class="card-desc">
+                        Secure login portal with SHA-256 salted password encryption and role-restricted workspace
+                        access.
+                    </p>
+                    <div class="tags-row">
+                        <span class="tech-pill">Streamlit Session</span>
+                        <span class="tech-pill">SHA-256 Hashing</span>
+                        <span class="tech-pill">RBAC Decorator</span>
+                    </div>
+                </div>
+
+                <!-- US 2 -->
+                <div class="us-card">
+                    <div class="card-top">
+                        <div class="card-title-group">
+                            <span class="dot"></span>
+                            <h3 class="card-title">User Account Administration</h3>
+                        </div>
+                        <span class="us-code">US 2</span>
+                    </div>
+                    <p class="card-desc">
+                        Central GM console to manage accounts, toggle user status, and assign agency scopes (DAO).
+                    </p>
+                    <div class="tags-row">
+                        <span class="tech-pill">Inputs Validation</span>
+                        <span class="tech-pill">SQL UPDATE</span>
+                        <span class="tech-pill">Admin Console</span>
+                    </div>
+                </div>
+
+                <!-- RLS / Isolation -->
+                <div class="us-card">
+                    <div class="card-top">
+                        <div class="card-title-group">
+                            <span class="dot"></span>
+                            <h3 class="card-title">Branch Data Isolation (RLS)</h3>
+                        </div>
+                        <span class="us-code">RLS</span>
+                    </div>
+                    <p class="card-desc">
+                        Dynamic SQL query filtering to restrict branch managers strictly to their agency perimeter.
+                    </p>
+                    <div class="tags-row">
+                        <span class="tech-pill">Row-Level Security</span>
+                        <span class="tech-pill">dao_filter_sql()</span>
+                        <span class="tech-pill">Multi-Tenant Scope</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Flow Arrow -->
+            <div class="flow-arrow-container">
+                <div class="arrow-circle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </div>
+                <span>SECURED PROFILES</span>
+            </div>
+
+            <!-- Sprint 2 Column -->
+            <div class="sprint-column sprint-2">
+                <div class="column-header">
+                    <h2 class="column-title">
+                        Sprint 2 : Orchestration Engine
+                    </h2>
+                    <span class="pill-badge">Analytics & Automation</span>
+                </div>
+
+                <!-- US 3 -->
+                <div class="us-card">
+                    <div class="card-top">
+                        <div class="card-title-group">
+                            <span class="dot"></span>
+                            <h3 class="card-title">Automated Master ELT Pipeline</h3>
+                        </div>
+                        <span class="us-code">US 3</span>
+                    </div>
+                    <p class="card-desc">
+                        Automate daily end-to-end data pipeline runs (Airbyte -> dbt -> DWH) every night at 02:00 UTC.
+                    </p>
+                    <div class="tags-row">
+                        <span class="tech-pill">Apache Airflow 2.9.1</span>
+                        <span class="tech-pill">Docker Compose</span>
+                        <span class="tech-pill">Master DAG</span>
+                    </div>
+                </div>
+
+                <!-- Multi-DAG -->
+                <div class="us-card">
+                    <div class="card-top">
+                        <div class="card-title-group">
+                            <span class="dot"></span>
+                            <h3 class="card-title">Multi-DAGs & XGBoost ML</h3>
+                        </div>
+                        <span class="us-code">DAGs</span>
+                    </div>
+                    <p class="card-desc">
+                        Deploy 4 modular DAGs and schedule automated Sunday XGBoost model retraining for customer risk.
+                    </p>
+                    <div class="tags-row">
+                        <span class="tech-pill">4 DAGs Ecosystem</span>
+                        <span class="tech-pill">XGBoost Retraining</span>
+                        <span class="tech-pill">MLflow Store</span>
+                    </div>
+                </div>
+
+                <!-- Data Quality & Fault Tolerance -->
+                <div class="us-card">
+                    <div class="card-top">
+                        <div class="card-title-group">
+                            <span class="dot"></span>
+                            <h3 class="card-title">Data Quality & Fault Tolerance</h3>
+                        </div>
+                        <span class="us-code">Quality</span>
+                    </div>
+                    <p class="card-desc">
+                        Automated data integrity validation and resilient pipeline failure management.
+                    </p>
+                    <div class="tags-row">
+                        <span class="tech-pill">Data Quality Rules</span>
+                        <span class="tech-pill">Referential Integrity</span>
+                        <span class="tech-pill">Fault Tolerance</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+
+</html>

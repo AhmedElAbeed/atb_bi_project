@@ -2,7 +2,7 @@
 ## Full Technical Documentation
 
 **Database:** `atb_bi`
-**Stack:** Airbyte · dbt · SQL Server (SSMS) · Python · Power BI
+**Stack:** Airbyte · dbt · SQL Server (SSMS) · Python · Apache Superset
 **Schema architecture:** Constellation model (2 fact tables)
 **Author:** Abdelmajid Sbouri
 **Institution:** Faculté des Sciences Économiques et de Gestion de Nabeul — Université de Carthage
@@ -24,7 +24,7 @@
 10. [dbt Tests and Data Quality](#10-dbt-tests-and-data-quality)
 11. [Running the Pipeline](#11-running-the-pipeline)
 12. [ML Layer Overview](#12-ml-layer-overview)
-13. [Power BI Connection](#13-power-bi-connection)
+13. [Apache Superset Connection](#13-apache-superset-connection)
 
 ---
 
@@ -44,7 +44,7 @@ the same dataset and represents the core contribution of this project.
 
 The data warehouse uses a **constellation schema** — two fact tables sharing common
 dimensions — which allows both analytical domains to be explored independently or
-in combination through Power BI.
+in combination through Apache Superset.
 
 Current implementation status: the active dbt pipeline is focused on staging and
 intermediate cleaning. The warehouse dimensions and fact tables are documented as
@@ -1494,15 +1494,15 @@ joblib==1.3.0
 
 ---
 
-## 13. Power BI Connection
+## 13. Apache Superset Connection
 
-Connect Power BI to SSMS:
+Connect Apache Superset to SQL Server:
 
-1. Open Power BI Desktop
-2. Get Data → SQL Server
+1. Open Apache Superset
+2. Add Database → Microsoft SQL Server
 3. Server: `localhost`
 4. Database: `atb_bi`
-5. Import mode (not DirectQuery — faster for dashboards)
+5. Prefer curated views and importable datasets for dashboard speed
 
 Import these tables:
 ```

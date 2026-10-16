@@ -1,0 +1,433 @@
+%% @Author: Ahmad Ben Taleb
+%  @Date:   2026
+%% @Class:  PFE ITBS V3.
+
+\documentclass[a4paper, oneside, 12pt, final]{extreport}
+\usepackage{graphicx}
+
+\usepackage{titlesec}
+\titlespacing*{\chapter}{0pt}{-30pt}{20pt}
+
+\parindent 0cm
+\usepackage{makeidx}
+\usepackage{tcolorbox}
+\usepackage[table]{xcolor}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage[space]{grffile}
+\usepackage{float}        % Required for [H] figure/table placement
+\usepackage{placeins}     % FloatBarrier command
+\usepackage{caption}      % Better caption formatting
+\usepackage{tabularx}     % Flexible table columns
+\usepackage{booktabs}     % Professional table rules
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{amssymb}
+\usepackage{microtype}      % Better line breaking (TeXPage)
+\emergencystretch=2em       % Reduce overfull hbox warnings
+\makeindex
+\graphicspath{{./figures/}{./logo/}{./}{../figures/}{../logo/}}  % TeXPage: figures live in ./figures/
+%\usepackage[french]{babel}
+\usepackage[lined,boxed,commentsnumbered, english, ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{amsthm}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{exemple}{Example}[chapter]
+
+
+%\usepackage[nottoc]{tocbibind}
+%\addcontentsline{toc}{section}{References}
+
+\providecommand{\keywords}[1]{\textbf{\textit{Mots clés---}} #1}
+\providecommand{\keywordss}[1]{\textbf{\textit{Keywords---}} #1}
+
+\usepackage{etoolbox}
+%\makeatletter
+%\patchcmd{\thebibliography}{%
+%  \chapter*{\bibname}\@mkboth{\MakeUppercase\bibname}%{\MakeUppercase\bibname}}{%
+%  \section{References}}{}{}
+%\makeatother
+
+
+
+\usepackage[nottoc]{tocbibind}
+
+\textwidth 18cm
+\textheight 24cm
+\topmargin -0.5cm
+\oddsidemargin -1cm
+
+% set font encoding for PDFLaTeX or XeLaTeX
+\usepackage{ifxetex}
+\ifxetex
+  \usepackage{fontspec}
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{lmodern}
+\fi
+
+
+% Enable SageTeX to run SageMath code right inside this LaTeX file.
+% documentation: http://mirrors.ctan.org/macros/latex/contrib/sagetex/sagetexpackage.pdf
+%\usepackage{sagetex}
+
+
+\newcommand{\reportTitle} {%
+  %\textsc{Graduation Project Report}
+  \textsc{Projet de Fin d'\'etudes}
+}
+
+\newcommand{\reportAuthor} {%
+  Ahmed ElAbed%
+}
+
+\newcommand{\reportSubject} {%
+  Conception et Implémentation d'une Plateforme\\%
+  Business Intelligence et Machine Learning pour la\\%
+  Direction Marché Entreprises de l'ATB%
+}
+
+
+
+\newcommand{\studyDepartment} {%
+  la \textit{Direction March\'{e} Entreprises} de l'\textbf{Arab Tunisian Bank (ATB)}%
+}
+
+\newcommand{\ITBS} {%
+  l'\textbf{International Tunis Business School (ITBS)}%
+}
+
+%\newcommand{\codePFE} {% Reference
+%  Code PFE%
+%}
+
+
+\newcommand{\AU} {
+\centering \textbf{Année Universitaire 2024-2025}
+}
+
+
+\newcommand{\specialcell}[1]{%
+  \begin{tabularx}{\textwidth}{@{}X@{}}#1\end{tabularx}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Add your own commands here
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\MyCommand} {%
+  Does nothing really%
+}
+
+
+% used in maketitle
+\title{\reportSubject}
+\author{\reportAuthor}
+
+% Enable SageTeX to run SageMath code right inside this LaTeX file.
+% documentation: http://mirrors.ctan.org/macros/latex/contrib/sagetex/sagetexpackage.pdf
+%\usepackage{sagetex}
+
+%\hypersetup{
+%  pdftitle={\reportTitle~-~\reportSubject},%
+%  pdfauthor={\reportAuthor},%
+%  pdfsubject={\reportSubject},%
+%  pdfkeywords={report} {internship} {pfe} {enis}
+%}
+
+\usepackage{graphics}
+\usepackage{graphicx}
+
+
+\usepackage[acronym,toc,section=chapter,nonumberlist]{glossaries}
+\makeglossaries
+
+\newacronym{atb}{ATB}{Arab Tunisian Bank}
+\newacronym{itbs}{ITBS}{International Tunis Business School}
+\newacronym{bi}{BI}{Business Intelligence}
+\newacronym{etl}{ETL}{Extract, Transform, Load}
+\newacronym{dwh}{DWH}{Data Warehouse}
+\newacronym{kpi}{KPI}{Key Performance Indicator}
+\newacronym{ml}{ML}{Machine Learning}
+\newacronym{dbt}{dbt}{data build tool}
+\newacronym{dag}{DAG}{Directed Acyclic Graph}
+\newacronym{shap}{SHAP}{Shapley Additive exPlanations}
+\newacronym{crispdm}{CRISP-DM}{Cross-Industry Standard Process for Data Mining}
+\newacronym{gimsi}{GIMSI}{G\'{e}n\'{e}rer des Indicateurs de performance pour le Management Strat\'{e}gique de l'Information}
+\newacronym{sme}{SME}{Small and Medium-sized Enterprises}
+\newacronym{auc}{AUC}{Area Under the Curve}
+\newacronym{xgboost}{XGBoost}{Extreme Gradient Boosting}
+\newacronym{sql}{SQL}{Structured Query Language}
+\newacronym{api}{API}{Application Programming Interface}
+
+\pagenumbering{roman} 
+
+\usepackage[utf8]{inputenc}
+%\usepackage[french]{babel}
+
+\begin{document}
+\thispagestyle{empty}
+\begin{titlepage}
+\centering
+
+\includegraphics[scale=0.16]{embleme.jpg}
+
+\vspace{0.3cm}
+{\fontsize{9pt}{11pt}\selectfont
+Republic of Tunisia \\
+Ministry of Higher Education and Scientific Research \\
+\textbf{International Tunis Business School (ITBS)}
+}
+
+\vspace{0.5cm}
+\includegraphics[scale=0.09]{logonoir.png}
+
+\vspace{0.6cm}
+{\textit{Graduation project submitted in partial fulfilment of the}}\\[0.25cm]
+{\textbf{\large National Engineering Diploma in Computer Engineering \\
+Specialisation: Business Intelligence}}\\[0.5cm]
+
+\textbf{\textit{Prepared by}}\\[0.2cm]
+{\Large\bfseries\scshape Ahmed ElAbed}\\[0.5cm]
+
+\rule{0.52\textwidth}{0.4pt}\\[0.35cm]
+{\large\bfseries Customer Risk Assessment and Management \\ for Enterprise Clients at Arab Tunisian Bank }\\[0.35cm]
+\rule{0.52\textwidth}{0.4pt}\\[0.6cm]
+
+\begin{minipage}{0.9\textwidth}
+\begin{tabular}{@{}p{0.46\textwidth}@{\hspace{0.04\textwidth}}p{0.46\textwidth}@{}}
+\textbf{Academic Supervisor:} & \textbf{Professional Supervisor:} \\[0.15cm]
+Mrs Nesrine Tarhouni & Mr Mohamed Saddek Snoussi \\
+\end{tabular}
+\end{minipage}
+
+\vfill
+\textbf{\textit{Graduation project carried out at}}\\[0.15cm]
+\textit{Corporate Banking Division --- Arab Tunisian Bank (ATB)}\\[0.25cm]
+\includegraphics[scale=0.18]{atb_logo.png}\\[0.35cm]
+\textbf{Academic Year 2025--2026}
+
+\end{titlepage}
+
+% ###############################
+% # HELP COMMANDS               #
+% ###############################
+%
+% -1 \part{part}
+%  0 \chapter{chapter}
+%  1 \section{section}
+%  2 \subsection{subsection}
+%  3 \subsubsection{subsubsection}
+%  4 \paragraph{paragraph}
+%  5 \subparagraph{subparagraph}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Dédicace et Remerciements
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{Accord_depot}
+\chapter*{Dedication}
+%\chapter*{D\'edicace}
+%\addcontentsline{toc}{chapter}{Dedication}
+\thispagestyle{empty}
+
+\begin{center}
+\itshape
+I dedicate this graduation project:
+\end{center}
+
+\begin{flushright}
+\begin{minipage}{0.9\textwidth}
+\itshape
+
+To my mother,\\
+who never ceased to support and encourage me.\\
+Whatever I achieve, I will never thank her enough for her kindness,\\
+her sacrifices and her affection.\\
+May God protect her.
+
+\vspace{0.5cm}
+
+To my father,\\
+who patiently awaited this day.\\
+In recognition and deep gratitude for his sacrifices and devotion.\\
+May God protect him.
+
+\vspace{0.5cm}
+
+To my academic and professional supervisors,\\
+for their guidance, trust and constant availability throughout this work.
+
+\vspace{0.5cm}
+
+To my family and friends,\\
+for their encouragement at every stage of this journey.
+
+\end{minipage}
+\end{flushright}
+
+\chapter*{Acknowledgment}
+%\chapter*{Remerciements}
+%\addcontentsline{toc}{chapter}{Thanks}
+\thispagestyle{empty}
+
+This graduation project would not have been possible without the support of many people
+to whom I wish to express my sincere gratitude.
+
+I warmly thank my academic supervisor for her availability, rigorous feedback and
+methodological guidance, which helped structure this work from the problem statement
+through to the final deliverables. I equally thank my professional supervisor at the
+Arab Tunisian Bank for welcoming me into the Corporate Banking Division, for sharing
+business expertise on customer risk and compliance, and for steering the project toward
+operationally useful outcomes.
+
+I am grateful to the teams of the Corporate Banking Division at ATB for the trust they
+placed in this platform and for the exchanges that clarified real decision needs behind
+the KPIs, alerts and dashboards. I also thank International Tunis Business School (ITBS)
+and its teaching staff for the academic framework that made this engineering diploma
+possible.
+
+Finally, my deepest thanks go to my family and friends for their patience, encouragement
+and unfailing support throughout this internship and the writing of this report.
+
+
+\input{abstract.tex}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Divers chapitres
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addtocontents{toc}{\protect\setcounter{tocdepth}{4}}
+\tableofcontents
+%\addcontentsline{toc}{chapter}{\contentsname}
+
+\listoffigures
+%\addcontentsline{toc}{chapter}{Liste des Figures}
+\listoftables
+%\addcontentsline{toc}{chapter}{Liste des Tableaux}
+\glsaddall
+\printglossaries
+
+\cleardoublepage
+
+\newpage
+\pagenumbering{arabic}
+\chapter*{General Introduction}
+\label{chap:general_intorduction}
+\vspace{0.5cm}
+\input{introduction.tex}
+
+
+\input{chapitre1.tex}
+\input{chapitre2.tex}
+\input{chapitre3.tex}
+\input{chapitre4.tex}
+\input{chapitre5.tex}
+
+\chapter*{General Conclusion and Perspectives}
+\label{chap:conclusion}
+\markboth{\MakeUppercase{General Conclusion and Perspectives}}{}%
+\addcontentsline{toc}{chapter}{General Conclusion and Perspectives}
+\vspace{0.5cm}
+
+This project started from a simple observation: decision-makers at Arab Tunisian Bank
+did not have a reliable, shared view of their customer portfolio. By the end of
+this work, that gap was filled --- with a platform that centralises data, produces
+visual dashboards, and adds a layer of predictive intelligence to support risk decisions.
+
+The project was delivered in three successive phases. The first secured the environment
+and put automated pipelines in place. The second built the analytical foundation ---
+a structured data warehouse feeding role-based dashboards for branch managers,
+compliance officers, and general management. The third introduced a machine learning
+model that flags high-risk customers and explains its reasoning in plain terms,
+always alongside the official rules-based score.
+
+The main contribution goes beyond the technical side. What was built is a single,
+trustworthy source of information that different teams can rely on together ---
+something the bank did not have before.
+
+Looking ahead, several directions are worth exploring. On the modelling side, regular
+monitoring and periodic retraining would help the system stay accurate over time.
+On the data side, the most promising evolution is the move toward real-time data
+streaming --- replacing the current nightly batch approach with a live data flow,
+so that risk indicators and dashboards reflect what is happening at the bank right now,
+not yesterday. This shift would significantly strengthen the platform's value for
+time-sensitive compliance and credit decisions.
+
+More broadly, this project shows that a well-structured engineering effort, even at
+graduation project scale, can lay a solid foundation for a modern, data-driven banking
+operation.
+
+
+\newpage
+\appendix
+\addcontentsline{toc}{chapter}{Annexes}
+%\markboth{\MakeUppercase{Annexe}}{}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Bibliography — only cited references (no \nocite{*})
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\bibliographystyle{apalike}
+\bibliographystyle{plain}
+\renewcommand{\bibname}{References}
+\bibliography{Biblio.bib}
+
+\cleardoublepage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Webography
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter*{Webography}
+\markboth{\MakeUppercase{Webography}}{}%
+\addcontentsline{toc}{chapter}{Webography}
+
+The following online resources were consulted during the design and implementation of the
+platform (official documentation and technical references).
+
+\begin{itemize}
+    \item \textbf{Apache Airflow} --- workflow orchestration documentation.\\
+          \url{https://airflow.apache.org/docs/}
+    \item \textbf{Airbyte} --- open-source data integration platform.\\
+          \url{https://docs.airbyte.com/}
+    \item \textbf{dbt (data build tool)} --- transformation and testing documentation.\\
+          \url{https://docs.getdbt.com/}
+    \item \textbf{Streamlit} --- Python dashboard framework.\\
+          \url{https://docs.streamlit.io/}
+    \item \textbf{MLflow} --- experiment tracking and model registry.\\
+          \url{https://mlflow.org/docs/latest/index.html}
+    \item \textbf{XGBoost} --- gradient boosting library documentation.\\
+          \url{https://xgboost.readthedocs.io/}
+    \item \textbf{scikit-learn} --- machine learning toolbox.\\
+          \url{https://scikit-learn.org/stable/}
+    \item \textbf{SHAP} --- model explainability (SHapley Additive exPlanations).\\
+          \url{https://shap.readthedocs.io/}
+    \item \textbf{Plotly} --- interactive charting library used in Streamlit.\\
+          \url{https://plotly.com/python/}
+    \item \textbf{Docker} --- container platform documentation.\\
+          \url{https://docs.docker.com/}
+    \item \textbf{Microsoft SQL Server} --- database engine documentation.\\
+          \url{https://learn.microsoft.com/en-us/sql/sql-server/}
+    \item \textbf{SQLAlchemy} --- Python SQL toolkit and ORM.\\
+          \url{https://docs.sqlalchemy.org/}
+    \item \textbf{Google Gemini API} --- generative AI for chart explanations.\\
+          \url{https://ai.google.dev/gemini-api/docs}
+    \item \textbf{Scrum Guide} --- agile delivery framework.\\
+          \url{https://scrumguides.org/}
+    \item \textbf{CRISP-ML(Q)} --- machine learning process with quality assurance
+          (Studer et al.).\\
+          \url{https://arxiv.org/abs/2003.05155}
+    \item \textbf{Draw.io (diagrams.net)} --- architecture and UML diagrams.\\
+          \url{https://www.diagrams.net/}
+    \item \textbf{Arab Tunisian Bank} --- institutional website.\\
+          \url{https://www.atb.tn/}
+\end{itemize}
+
+\cleardoublepage%
+
+
+\printindex
+
+\end{document}

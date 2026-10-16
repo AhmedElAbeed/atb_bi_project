@@ -1,0 +1,32 @@
+services:
+  atb-streamlit:
+    build:
+      context: ../..
+      dockerfile: 5_reporting/streamlit/Dockerfile
+    image: atb-streamlit:latest
+    container_name: atb-streamlit
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Reach SQL Server on the Windows/Mac host from inside the container.
+      ATB_SQL_SERVER: host.docker.internal
+      # MLflow file store — container mount path (not Windows C:/ path)
+      MLFLOW_TRACKING_URI: file:///app/4_ml/mlruns
+      ATB_MLFLOW_EXPERIMENT: atb_bi_customer_risk
+      # Airbyte on host — localhost inside container points to the container itself
+      ATB_AIRBYTE_URL: http://host.docker.internal:8000
+      ATB_AIRBYTE_UI_URL: http://localhost:8000/workspaces/524f3fec-4d3d-4ed4-b4a3-93243c05cbc4/connections
+      ATB_AIRFLOW_URL: http://host.docker.internal:8080
+      ATB_AIRFLOW_UI_URL: http://localhost:8080/home
+      ATB_AIRFLOW_USER: admin
+      ATB_AIRFLOW_PASSWORD: admin
+    volumes:
+      - ../../5_reporting/streamlit:/app/5_reporting/streamlit
+      - ../../4_ml:/app/4_ml
+      - ../../2_orchestration:/app/2_orchestration
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped

@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release 3: ML Risk Intelligence — Live Demo, Batch Scoring & Full Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-sub: #64748b;
+
+            /* Purple — ML theme */
+            --purple: #7c3aed;
+            --purple-light: #f5f3ff;
+            --purple-border: #ddd6fe;
+            --purple-dark: #5b21b6;
+            --purple-badge: #ede9fe;
+
+            /* Blue — Live Demo */
+            --blue: #2563eb;
+            --blue-light: #eff6ff;
+            --blue-border: #bfdbfe;
+            --blue-badge: #dbeafe;
+            --blue-text: #1e40af;
+
+            /* Amber — Batch Scoring */
+            --amber: #d97706;
+            --amber-light: #fffbeb;
+            --amber-border: #fde68a;
+            --amber-badge: #fef3c7;
+            --amber-text: #92400e;
+
+            /* Emerald — Full Predictor */
+            --emerald: #059669;
+            --emerald-light: #ecfdf5;
+            --emerald-border: #a7f3d0;
+            --emerald-badge: #d1fae5;
+            --emerald-text: #065f46;
+
+            /* Green for success */
+            --green: #10b981;
+
+            --radius: 22px;
+            --radius-sm: 12px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+            -webkit-font-smoothing: antialiased;
+            color: var(--text-main);
+        }
+
+        /* 16:9 slide */
+        .slide {
+            width: 1600px;
+            background: var(--white);
+            border-radius: 28px;
+            padding: 38px 42px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.09), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        /* ── HEADER ── */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 18px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header-left h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.4px;
+        }
+
+        .header-left h1 span {
+            color: var(--purple);
+        }
+
+        .header-left p {
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .sprint-badge {
+            background: #0f172a;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: var(--radius-pill);
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── CONCEPT INTRO BAR ── */
+        .intro-bar {
+            background: var(--purple-light);
+            border: 2px solid var(--purple-border);
+            border-radius: 14px;
+            padding: 14px 22px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .intro-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .intro-text {
+            font-size: 13.5px;
+            color: var(--purple-dark);
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .intro-text strong {
+            color: var(--purple);
+        }
+
+        /* ── MAIN 3-COLUMN LAYOUT ── */
+        .cards-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 22px;
+        }
+
+        /* Each feature card */
+        .feat-card {
+            border-radius: var(--radius);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-live {
+            border: 2.5px solid var(--blue);
+            background: var(--white);
+        }
+
+        .card-batch {
+            border: 2.5px solid var(--amber);
+            background: var(--white);
+        }
+
+        .card-pred {
+            border: 2.5px solid var(--emerald);
+            background: var(--white);
+        }
+
+        /* Card header */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .card-title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .card-emoji {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .card-live .card-title {
+            color: var(--blue);
+        }
+
+        .card-batch .card-title {
+            color: var(--amber);
+        }
+
+        .card-pred .card-title {
+            color: var(--emerald);
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .us-tag {
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 800;
+        }
+
+        .card-live .us-tag {
+            background: var(--blue-badge);
+            color: var(--blue-text);
+        }
+
+        .card-batch .us-tag {
+            background: var(--amber-badge);
+            color: var(--amber-text);
+        }
+
+        .card-pred .us-tag {
+            background: var(--emerald-badge);
+            color: var(--emerald-text);
+        }
+
+        /* Divider */
+        .card-divider {
+            height: 1.5px;
+            background: #f1f5f9;
+            border-radius: 2px;
+        }
+
+        /* Stat row inside card */
+        .stat-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 3px;
+        }
+
+        .stat-val {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .stat-label {
+            font-size: 10.5px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        /* Features list — icon + text */
+        .feat-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .feat-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 13px;
+            background: #fafafa;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+        }
+
+        .feat-icon {
+            font-size: 15px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .feat-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .feat-name {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .feat-desc {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        /* Flow steps for batch */
+        .flow-steps {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        .flow-step {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .flow-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            color: white;
+        }
+
+        .card-live .flow-dot {
+            background: var(--blue);
+        }
+
+        .card-batch .flow-dot {
+            background: var(--amber);
+        }
+
+        .card-pred .flow-dot {
+            background: var(--emerald);
+        }
+
+        .flow-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-align: center;
+        }
+
+        .flow-arrow {
+            width: 20px;
+            height: 1.5px;
+            background: #e2e8f0;
+            flex-shrink: 0;
+            margin-bottom: 14px;
+        }
+
+        /* Form fields mockup for predictor */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+        }
+
+        .form-field {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 7px 11px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .field-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--emerald);
+            flex-shrink: 0;
+        }
+
+        .field-name {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* ── FOOTER ── */
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 14px;
+            border-top: 1.5px dashed #e2e8f0;
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .footer-stats {
+            display: flex;
+            gap: 28px;
+        }
+
+        .footer-stats span {
+            color: var(--text-main);
+            font-weight: 800;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide">
+
+        <!-- ── HEADER ── -->
+        <div class="slide-header">
+            <div class="header-left">
+                <h1>RELEASE 3 : <span>ML RISK INTELLIGENCE</span> — STREAMLIT DEPLOYMENT</h1>
+                <p>Live Customer Lookup • Batch Scoring & Disagreement Alerts • Full What-If Predictor • Rules vs. ML
+                    Dual-Layer Comparison</p>
+            </div>
+            <div class="sprint-badge">ARAB TUNISIAN BANK • SPRINT 4</div>
+        </div>
+
+        <!-- ── INTRO BAR ── -->
+        <div class="intro-bar">
+            <span class="intro-icon">🧠</span>
+            <p class="intro-text">
+                The XGBoost model is deployed as a <strong>5-Tab Streamlit ML Risk Intelligence</strong> module,
+                embedded into the existing RBAC dashboard with no disruption to Release 2 pages.
+                Three key interfaces surface the model to compliance officers and risk analysts: a <strong>Live
+                    Demo</strong> for instant customer lookup, a <strong>Batch Scoring</strong> engine for
+                population-wide alerts, and a <strong>Full Predictor</strong> for manual what-if profiling.
+            </p>
+        </div>
+
+        <!-- ── 3 MAIN CARDS ── -->
+        <div class="cards-row">
+
+            <!-- ── CARD 1: LIVE DEMO ── -->
+            <div class="feat-card card-live">
+                <div class="card-header">
+                    <div class="card-title-block">
+                        <span class="card-emoji">⚡</span>
+                        <span class="card-title">Live Demo</span>
+                        <span class="card-subtitle">Instant Customer Risk Lookup</span>
+                    </div>
+                    <span class="us-tag">US 11</span>
+                </div>
+
+                <!-- Stats -->
+                <div class="stat-row">
+                    <div class="stat-box">
+                        <span class="stat-val">
+                            < 1s</span>
+                                <span class="stat-label">Response Time</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val">2</span>
+                        <span class="stat-label">Layers Compared</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val">MATCH / REVIEW</span>
+                        <span class="stat-label">Alert Status</span>
+                    </div>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- Flow -->
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="flow-dot">🔍</div>
+                        <div class="flow-label">Enter Customer ID</div>
+                    </div>
+                    <div class="flow-arrow"></div>
+                    <div class="flow-step">
+                        <div class="flow-dot">⚖️</div>
+                        <div class="flow-label">Rules Score (GRS)</div>
+                    </div>
+                    <div class="flow-arrow"></div>
+                    <div class="flow-step">
+                        <div class="flow-dot">🤖</div>
+                        <div class="flow-label">XGBoost P(risk)</div>
+                    </div>
+                    <div class="flow-arrow"></div>
+                    <div class="flow-step">
+                        <div class="flow-dot">🚨</div>
+                        <div class="flow-label">MATCH / REVIEW</div>
+                    </div>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- Features -->
+                <div class="feat-list">
+                    <div class="feat-item">
+                        <span class="feat-icon">📊</span>
+                        <div class="feat-text">
+                            <span class="feat-name">Side-by-Side Comparison</span>
+                            <span class="feat-desc">Official GRS tier vs. XGBoost probability displayed together for
+                                manual review</span>
+                        </div>
+                    </div>
+                    <div class="feat-item">
+                        <span class="feat-icon">🎚️</span>
+                        <div class="feat-text">
+                            <span class="feat-name">Adjustable Threshold Slider</span>
+                            <span class="feat-desc">Officer can tune the ML decision threshold in real-time without
+                                retraining</span>
+                        </div>
+                    </div>
+                    <div class="feat-item">
+                        <span class="feat-icon">🔬</span>
+                        <div class="feat-text">
+                            <span class="feat-name">Pillar Breakdown Panel</span>
+                            <span class="feat-desc">CRI, FFS, BRS indices + KYC / overdraft flags displayed for
+                                investigation support</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── CARD 2: BATCH SCORING ── -->
+            <div class="feat-card card-batch">
+                <div class="card-header">
+                    <div class="card-title-block">
+                        <span class="card-emoji">⚙️</span>
+                        <span class="card-title">Batch Scoring & Alerts</span>
+                        <span class="card-subtitle">Population-Wide Disagreement Detection</span>
+                    </div>
+                    <span class="us-tag">US 11 • US 14</span>
+                </div>
+
+                <!-- Stats -->
+                <div class="stat-row">
+                    <div class="stat-box">
+                        <span class="stat-val">500–8k</span>
+                        <span class="stat-label">Customers Scored</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val">2</span>
+                        <span class="stat-label">Alert Directions</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val">CSV</span>
+                        <span class="stat-label">Export Format</span>
+                    </div>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- Flow -->
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="flow-dot">🎛️</div>
+                        <div class="flow-label">Select Pop. Size</div>
+                    </div>
+                    <div class="flow-arrow"></div>
+                    <div class="flow-step">
+                        <div class="flow-dot">🤖</div>
+                        <div class="flow-label">XGBoost Batch Run</div>
+                    </div>
+                    <div class="flow-arrow"></div>
+                    <div class="flow-step">
+                        <div class="flow-dot">🔔</div>
+                        <div class="flow-label">Disagreement Flags</div>
+                    </div>
+                    <div class="flow-arrow"></div>
+                    <div class="flow-step">
+                        <div class="flow-dot">📥</div>
+                        <div class="flow-label">CSV Export</div>
+                    </div>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- Features -->
+                <div class="feat-list">
+                    <div class="feat-item">
+                        <span class="feat-icon">🟡</span>
+                        <div class="feat-text">
+                            <span class="feat-name">ML High / Rules Low Alerts</span>
+                            <span class="feat-desc">Primary alert: customers ML flags as high-risk that the rules engine
+                                has not yet escalated</span>
+                        </div>
+                    </div>
+                    <div class="feat-item">
+                        <span class="feat-icon">🟠</span>
+                        <div class="feat-text">
+                            <span class="feat-name">Rules High / ML Low Alerts</span>
+                            <span class="feat-desc">Secondary review: customers with high GRS score but low ML
+                                probability — possible rule over-trigger</span>
+                        </div>
+                    </div>
+                    <div class="feat-item">
+                        <span class="feat-icon">📈</span>
+                        <div class="feat-text">
+                            <span class="feat-name">Agreement Rate KPI + Scatter</span>
+                            <span class="feat-desc">Visual consensus rate between rules and ML, with GRS vs. P(risk)
+                                scatter for divergence analysis</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── CARD 3: FULL PREDICTOR ── -->
+            <div class="feat-card card-pred">
+                <div class="card-header">
+                    <div class="card-title-block">
+                        <span class="card-emoji">🧪</span>
+                        <span class="card-title">Full What-If Predictor</span>
+                        <span class="card-subtitle">25+ Field Manual Risk Profiling Form</span>
+                    </div>
+                    <span class="us-tag">US 11</span>
+                </div>
+
+                <!-- Stats -->
+                <div class="stat-row">
+                    <div class="stat-box">
+                        <span class="stat-val">25+</span>
+                        <span class="stat-label">Input Fields</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val">Instant</span>
+                        <span class="stat-label">Score & Tier</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val">What-If</span>
+                        <span class="stat-label">Scenario Testing</span>
+                    </div>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- Input fields grid mockup -->
+                <div
+                    style="font-size: 11.5px; font-weight: 700; color: var(--emerald-text); text-transform: uppercase; letter-spacing: 0.5px;">
+                    Sample Input Fields
+                </div>
+                <div class="form-grid">
+                    <div class="form-field">
+                        <span class="field-dot"></span>
+                        <span class="field-name">KYC Complete (Yes / No)</span>
+                    </div>
+                    <div class="form-field">
+                        <span class="field-dot"></span>
+                        <span class="field-name">Monthly Salary (DT)</span>
+                    </div>
+                    <div class="form-field">
+                        <span class="field-dot"></span>
+                        <span class="field-name">Has Overdraft Account</span>
+                    </div>
+                    <div class="form-field">
+                        <span class="field-dot"></span>
+                        <span class="field-name">Days since KYC Review</span>
+                    </div>
+                    <div class="form-field">
+                        <span class="field-dot"></span>
+                        <span class="field-name">PEP Status (Yes / No)</span>
+                    </div>
+                    <div class="form-field">
+                        <span class="field-dot"></span>
+                        <span class="field-name">Employment Status</span>
+                    </div>
+                    <div class="form-field">
+                        <span class="field-dot"></span>
+                        <span class="field-name">Total Account Balance</span>
+                    </div>
+                    <div class="form-field">
+                        <span class="field-dot"></span>
+                        <span class="field-name">Number of Accounts</span>
+                    </div>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- Feature -->
+                <div class="feat-list">
+                    <div class="feat-item">
+                        <span class="feat-icon">🎯</span>
+                        <div class="feat-text">
+                            <span class="feat-name">Instant XGBoost Prediction</span>
+                            <span class="feat-desc">Fill any profile manually → model returns P(high risk), binary
+                                label, and risk tier immediately</span>
+                        </div>
+                    </div>
+                    <div class="feat-item">
+                        <span class="feat-icon">🔄</span>
+                        <div class="feat-text">
+                            <span class="feat-name">Scenario Simulation</span>
+                            <span class="feat-desc">Modify KYC or salary fields to see how the risk score changes —
+                                useful for policy impact testing</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── FOOTER ── -->
+        <div class="slide-footer">
+            <div class="footer-stats">
+                <div>Framework: <span>Streamlit 5-Tab ML Risk Intelligence Page</span></div>
+                <div>Architecture: <span>XGBoost Dual-Layer (Rules GRS + ML Screening) · RBAC-Secured</span></div>
+                <div>Monitoring: <span>Airflow Nightly Retraining · MLflow Registry Promotion</span></div>
+            </div>
+            <div>PFE ATB 2026 • Release 3</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

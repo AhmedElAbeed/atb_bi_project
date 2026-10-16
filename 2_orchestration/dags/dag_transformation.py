@@ -55,33 +55,24 @@ def validate_transformation_results(**context) -> bool:
     return True
 
 
-# dbt commands with environment setup
-DBT_ENV = (
-    f"cd {DBT_PROJECT_DIR} && "
-    f"export DBT_PROFILES_DIR={DBT_PROFILES_DIR} && "
-    f"export DBT_TARGET={DBT_TARGET}"
-)
+from utils.pipeline_config import DBT_ENV_PREFIX as DBT_ENV
 
 # Build task group
 with TaskGroup("dbt_build", tooltip="dbt build: run, test, snapshot", dag=dag) as dbt_group:
 
     dbt_debug = BashOperator(
         task_id="dbt_debug",
-        bash_command=f"{DBT_ENV} && dbt debug --target prod",
+        bash_command=f"{DBT_ENV} dbt debug --profiles-dir . --target prod",
         dag=dag,
     )
 
     dbt_deps = BashOperator(
         task_id="dbt_deps",
-        bash_command=f"{DBT_ENV} && dbt deps --target prod",
+        bash_command=f"{DBT_ENV} dbt deps --profiles-dir . --target prod",
         dag=dag,
     )
 
-    dbt_seed = BashOperator(
-        task_id="dbt_seed",
-        bash_command=f"{DBT_ENV} && dbt seed --target prod",
-        dag=dag,
-    )
+    dbt_debug >> dbt_deps
 
 # Staging layer tasks
 with TaskGroup("dbt_staging", tooltip="Run staging models (clean ODS data)", dag=dag) as staging_group:
@@ -89,17 +80,18 @@ with TaskGroup("dbt_staging", tooltip="Run staging models (clean ODS data)", dag
     dbt_run_staging = BashOperator(
         task_id="dbt_run_staging",
         bash_command=(
-            f"{DBT_ENV} && dbt run --select tag:staging "
-            "--profiles-dir . --target prod --vars 'environment: production'"
+            f"{DBT_ENV} dbt run --select path:models/staging "
+            "--profiles-dir . --target prod --threads 4"
         ),
+        execution_timeout=timedelta(hours=2),
         dag=dag,
     )
 
     dbt_test_staging = BashOperator(
         task_id="dbt_test_staging",
         bash_command=(
-            f"{DBT_ENV} && dbt test --select tag:staging "
-            "--profiles-dir . --target prod --fail-fast"
+            f"{DBT_ENV} dbt test --select path:models/staging "
+            "--profiles-dir . --target prod"
         ),
         dag=dag,
     )
@@ -113,16 +105,17 @@ with TaskGroup("dbt_intermediate", tooltip="Run intermediate models (business lo
     dbt_run_intermediate = BashOperator(
         task_id="dbt_run_intermediate",
         bash_command=(
-            f"{DBT_ENV} && dbt run --select tag:intermediate "
-            "--profiles-dir . --target prod --vars 'environment: production'"
+            f"{DBT_ENV} dbt run --select path:models/intermediate "
+            "--profiles-dir . --target prod --threads 4"
         ),
+        execution_timeout=timedelta(hours=1),
         dag=dag,
     )
 
     dbt_test_intermediate = BashOperator(
         task_id="dbt_test_intermediate",
         bash_command=(
-            f"{DBT_ENV} && dbt test --select tag:intermediate "
+            f"{DBT_ENV} dbt test --select path:models/intermediate "
             "--profiles-dir . --target prod --fail-fast"
         ),
         dag=dag,
@@ -137,25 +130,27 @@ with TaskGroup("dbt_warehouse", tooltip="Run warehouse models (dimensional schem
     dbt_run_dimensions = BashOperator(
         task_id="dbt_run_dimensions",
         bash_command=(
-            f"{DBT_ENV} && dbt run --select tag:dimension "
-            "--profiles-dir . --target prod --vars 'environment: production'"
+            f"{DBT_ENV} dbt run --select tag:dimension "
+            "--profiles-dir . --target prod --threads 4"
         ),
+        execution_timeout=timedelta(hours=2),
         dag=dag,
     )
 
     dbt_run_facts = BashOperator(
         task_id="dbt_run_facts",
         bash_command=(
-            f"{DBT_ENV} && dbt run --select tag:fact "
-            "--profiles-dir . --target prod --vars 'environment: production'"
+            f"{DBT_ENV} dbt run --select tag:fact "
+            "--profiles-dir . --target prod --threads 4"
         ),
+        execution_timeout=timedelta(hours=2),
         dag=dag,
     )
 
     dbt_test_warehouse = BashOperator(
         task_id="dbt_test_warehouse",
         bash_command=(
-            f"{DBT_ENV} && dbt test --select tag:warehouse "
+            f"{DBT_ENV} dbt test --select tag:dimension tag:fact "
             "--profiles-dir . --target prod --fail-fast"
         ),
         dag=dag,
@@ -173,7 +168,7 @@ validate_task = PythonOperator(
 
 dbt_generate_docs = BashOperator(
     task_id="dbt_generate_docs",
-    bash_command=f"{DBT_ENV} && dbt docs generate --profiles-dir . --target prod",
+    bash_command=f"{DBT_ENV} dbt docs generate --profiles-dir . --target prod",
     dag=dag,
 )
 

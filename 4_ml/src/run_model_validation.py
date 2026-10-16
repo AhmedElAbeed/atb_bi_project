@@ -31,26 +31,34 @@ def main() -> None:
     X_test = test_frame[feature_columns].copy()
     y_test = test_frame["risk_target"].astype(int)
 
-    models = {
-        "xgboost": ROOT / "4_ml" / "models" / "xgboost_best.pkl",
-        "random_forest": ROOT / "4_ml" / "models" / "random_forest_best.pkl",
-        "random_forest_joblib": ROOT / "4_ml" / "models" / "random_forest_best_model.joblib",
-        "xgboost_joblib": ROOT / "4_ml" / "models" / "xgboost_best_model.joblib",
+    artifact_candidates = {
+        "xgboost": [
+            ROOT / "4_ml" / "models" / "xgboost_best.pkl",
+            ROOT / "4_ml" / "models" / "xgboost_best_model.joblib",
+        ],
+        "random_forest": [
+            ROOT / "4_ml" / "models" / "random_forest_best.pkl",
+            ROOT / "4_ml" / "models" / "random_forest_best_model.joblib",
+        ],
+        "extra_trees": [
+            ROOT / "4_ml" / "models" / "extra_trees_best.pkl",
+            ROOT / "4_ml" / "models" / "extra_trees_best_model.joblib",
+        ],
+        "logistic_regression": [
+            ROOT / "4_ml" / "models" / "logistic_regression_best.pkl",
+            ROOT / "4_ml" / "models" / "logistic_regression_best_model.joblib",
+        ],
     }
 
-    resolved = {}
-    if models["xgboost"].exists():
-        resolved["xgboost"] = models["xgboost"]
-    elif models["xgboost_joblib"].exists():
-        resolved["xgboost"] = models["xgboost_joblib"]
+    resolved: dict[str, Path] = {}
+    for name, paths in artifact_candidates.items():
+        for path in paths:
+            if path.exists():
+                resolved[name] = path
+                break
 
-    if models["random_forest"].exists():
-        resolved["random_forest"] = models["random_forest"]
-    elif models["random_forest_joblib"].exists():
-        resolved["random_forest"] = models["random_forest_joblib"]
-
-    if len(resolved) < 2:
-        raise SystemExit("Missing model artifacts. Run training first.")
+    if modeling.PRODUCTION_MODEL not in resolved:
+        raise SystemExit(f"Missing production model artifact ({modeling.PRODUCTION_MODEL}). Run training first.")
 
     results = {}
     for name, model_path in resolved.items():
@@ -75,6 +83,7 @@ def main() -> None:
 
     summary = {
         "best_model_by_test_f1": best_model,
+        "production_model": modeling.PRODUCTION_MODEL,
         "results": results,
     }
 

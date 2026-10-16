@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Pillar Risk Engine & Business Architecture — ATB BI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-sub: #64748b;
+
+            /* Pillar 1: Compliance / Blue */
+            --blue: #2563eb;
+            --blue-light: #eff6ff;
+            --blue-border: #bfdbfe;
+            --blue-badge: #dbeafe;
+            --blue-text: #1e40af;
+
+            /* Pillar 2: Financial / Emerald & Amber */
+            --emerald: #059669;
+            --emerald-light: #ecfdf5;
+            --emerald-border: #a7f3d0;
+            --emerald-badge: #d1fae5;
+            --emerald-text: #065f46;
+
+            /* Pillar 3: Behavioral / Purple */
+            --purple: #7c3aed;
+            --purple-light: #f5f3ff;
+            --purple-border: #ddd6fe;
+            --purple-badge: #ede9fe;
+            --purple-text: #5b21b6;
+
+            /* Threat / Red */
+            --red: #e11d48;
+            --red-light: #fff1f2;
+
+            --radius: 20px;
+            --radius-sm: 12px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+            -webkit-font-smoothing: antialiased;
+            color: var(--text-main);
+        }
+
+        /* 16:9 canvas */
+        .slide {
+            width: 1600px;
+            background: var(--white);
+            border-radius: 28px;
+            padding: 36px 42px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.09), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* ── HEADER ── */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header-left h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+        }
+
+        .header-left p {
+            font-size: 13.5px;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .atb-badge {
+            background: #0f172a;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: var(--radius-pill);
+            font-size: 12.5px;
+            font-weight: 700;
+        }
+
+        /* ── DOMAIN & THREAT STRIP ── */
+        .domains-banner {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+        }
+
+        .domain-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .domain-tag {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+
+        }
+
+        .tag-descriptive {
+            color: var(--blue);
+        }
+
+        .tag-predictive {
+            color: var(--purple);
+        }
+
+        .tag-threat {
+            color: var(--red);
+        }
+
+        .domain-title {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .domain-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        /* ── MAIN LAYOUT: 3 PILLAR CARDS ── */
+        .body-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            flex: 1;
+        }
+
+        /* ── PILLAR CARD ── */
+        .pillar-card {
+            border-radius: var(--radius);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background: var(--white);
+        }
+
+        .card-compliance {
+            border: 2.5px solid var(--blue);
+            box-shadow: 0 8px 24px -6px rgba(37, 99, 235, 0.07);
+        }
+
+        .card-financial {
+            border: 2.5px solid var(--emerald);
+            box-shadow: 0 8px 24px -6px rgba(5, 150, 105, 0.07);
+        }
+
+        .card-behavioral {
+            border: 2.5px solid var(--purple);
+            box-shadow: 0 8px 24px -6px rgba(124, 58, 237, 0.07);
+        }
+
+        .pillar-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pillar-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pillar-emoji {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .card-compliance .pillar-emoji {
+            background: var(--blue-light);
+        }
+
+        .card-financial .pillar-emoji {
+            background: var(--emerald-light);
+        }
+
+        .card-behavioral .pillar-emoji {
+            background: var(--purple-light);
+        }
+
+        .pillar-title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .pillar-title {
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .card-compliance .pillar-title {
+            color: var(--blue);
+        }
+
+        .card-financial .pillar-title {
+            color: var(--emerald);
+        }
+
+        .card-behavioral .pillar-title {
+            color: var(--purple);
+        }
+
+        .pillar-sub {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        .weight-badge {
+            font-size: 13px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+        }
+
+        .card-compliance .weight-badge {
+            background: var(--blue-badge);
+            color: var(--blue-text);
+        }
+
+        .card-financial .weight-badge {
+            background: var(--emerald-badge);
+            color: var(--emerald-text);
+        }
+
+        .card-behavioral .weight-badge {
+            background: var(--purple-badge);
+            color: var(--purple-text);
+        }
+
+        .pillar-desc {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.55;
+            font-weight: 500;
+            background: #fafafa;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .pillar-desc strong {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        /* Cases / Flag List */
+        .flag-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .flag-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #fafafa;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .flag-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .flag-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .flag-reason {
+            font-size: 10.5px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .flag-pts {
+            font-size: 12.5px;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: var(--radius-pill);
+            flex-shrink: 0;
+        }
+
+        .card-compliance .flag-pts {
+            background: var(--blue-badge);
+            color: var(--blue-text);
+        }
+
+        .card-financial .flag-pts {
+            background: var(--emerald-badge);
+            color: var(--emerald-text);
+        }
+
+        .card-behavioral .flag-pts {
+            background: var(--purple-badge);
+            color: var(--purple-text);
+        }
+
+        /* Paper Citation Footer in Card */
+        .paper-cite {
+            margin-top: auto;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 8px 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-compliance .paper-cite {
+            background: var(--blue-light);
+            color: var(--blue-text);
+        }
+
+        .card-financial .paper-cite {
+            background: var(--emerald-light);
+            color: var(--emerald-text);
+        }
+
+        .card-behavioral .paper-cite {
+            background: var(--purple-light);
+            color: var(--purple-text);
+        }
+
+        /* ── FOOTER ── */
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1.5px dashed #e2e8f0;
+            font-size: 12.5px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .formula-pill {
+            background: #f1f5f9;
+            color: var(--text-main);
+            padding: 6px 16px;
+            border-radius: var(--radius-pill);
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .footer-stats {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-stats span {
+            color: var(--text-main);
+            font-weight: 800;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide">
+
+        <!-- ── HEADER ── -->
+        <div class="slide-header">
+            <div class="header-left">
+                <h1>3-PILLAR RISK ENGINE & BUSINESS ARCHITECTURE</h1>
+                <p>Decomposing ATB risk analysis into Compliance, Financial, and Behavioral risk cases with scientific
+                    grounding</p>
+            </div>
+            <div class="atb-badge">ARAB TUNISIAN BANK • RISK ENGINE</div>
+        </div>
+
+        <!-- ── DOMAINS & THREATS STRIP ── -->
+        <div class="domains-banner">
+            <div class="domain-box">
+                <span class="domain-tag tag-descriptive">Domain 1 • Descriptive DWH</span>
+                <span class="domain-title">Account Portfolio Analytics</span>
+                <span class="domain-desc">Answers <em>"What is the current state?"</em> — Analyzes accounts, balances,
+                    overdraft rates, and branch performance.</span>
+            </div>
+            <div class="domain-box">
+                <span class="domain-tag tag-predictive">Domain 2 • Predictive BI & ML</span>
+                <span class="domain-title">Customer Risk Analytics</span>
+                <span class="domain-desc">Answers <em>"Who poses a threat?"</em> — 3-pillar scoring & XGBoost classifier
+                    detecting risky customers.</span>
+            </div>
+            <div class="domain-box">
+                <span class="domain-tag tag-threat">Core Banking Threats</span>
+                <span class="domain-title">What is ATB Afraid Of?</span>
+                <span class="domain-desc"><strong>1. BCT/FATF Fines & Penalties</strong> • <strong>2. Credit
+                        Defaults</strong> • <strong>3. Fraud & Mule Accounts</strong></span>
+            </div>
+        </div>
+
+        <!-- ── BODY: 3 PILLAR CARDS ── -->
+        <div class="body-layout">
+
+            <!-- ── PILLAR 1: COMPLIANCE ── -->
+            <div class="pillar-card card-compliance">
+                <div class="pillar-top">
+                    <div class="pillar-header-left">
+                        <div class="pillar-emoji">🏛️</div>
+                        <div class="pillar-title-block">
+                            <span class="pillar-title">Compliance Risk (CRI)</span>
+                            <span class="pillar-sub">Regulatory Fines & AML Oversight</span>
+                        </div>
+                    </div>
+                    <span class="weight-badge">40% Weight</span>
+                </div>
+
+                <div class="pillar-desc">
+                    Targeting <strong>BCT & FATF regulatory penalties</strong>. Operating without KYC or ignoring PEPs
+                    exposes ATB to immediate fines and license risk.
+                </div>
+
+                <div class="flag-list">
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">🔴 Absence of KYC (`is_kyc_complete = 0`)</span>
+                            <span class="flag-reason">Violates central bank law; highest penalty</span>
+                        </div>
+                        <span class="flag-pts">+35 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">🏛️ PEP Presence (`is_pep = 1`)</span>
+                            <span class="flag-reason">Politicians/officials; bribery & AML risk</span>
+                        </div>
+                        <span class="flag-pts">+30 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">🚨 Compliance Flagged</span>
+                            <span class="flag-reason">Triggered internal AML suspicious alerts</span>
+                        </div>
+                        <span class="flag-pts">+25 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">🔒 Active Posting Restriction</span>
+                            <span class="flag-reason">Account frozen by judicial/tax order</span>
+                        </div>
+                        <span class="flag-pts">+15 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">🟡 KYC Overdue (>365 days / NULL)</span>
+                            <span class="flag-reason">Outdated customer identity files</span>
+                        </div>
+                        <span class="flag-pts">+15 pts</span>
+                    </div>
+                </div>
+
+                <div class="paper-cite">
+                    📜 Scientific Justification: <strong>FATF Recommendations (2012)</strong>
+                </div>
+            </div>
+
+            <!-- ── PILLAR 2: FINANCIAL ── -->
+            <div class="pillar-card card-financial">
+                <div class="pillar-top">
+                    <div class="pillar-header-left">
+                        <div class="pillar-emoji">💰</div>
+                        <div class="pillar-title-block">
+                            <span class="pillar-title">Financial Fragility (FFS)</span>
+                            <span class="pillar-sub">Credit Defaults & Money Losses</span>
+                        </div>
+                    </div>
+                    <span class="weight-badge">35% Weight</span>
+                </div>
+
+                <div class="pillar-desc">
+                    Targeting <strong>direct monetary losses</strong>. Measures customer debt capacity, unbacked
+                    overdrafts, and financial vulnerability.
+                </div>
+
+                <div class="flag-list">
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">💳 Negative Total Balance (`balance < 0`)</span>
+                                    <span class="flag-reason">Active overdraft; immediate default threat</span>
+                        </div>
+                        <span class="flag-pts">+30 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">💼 Missing / Zero Salary</span>
+                            <span class="flag-reason">Unverified income; cannot service debt</span>
+                        </div>
+                        <span class="flag-pts">+25 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">⚠️ Unemployed Status (`CHOMEUR`)</span>
+                            <span class="flag-reason">No regular wage income source</span>
+                        </div>
+                        <span class="flag-pts">+20 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">⭕ Zero Active Accounts</span>
+                            <span class="flag-reason">Dormant client entity with unknown activity</span>
+                        </div>
+                        <span class="flag-pts">+20 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">👨‍👩‍👧‍👦 High Dependents (≥ 4)</span>
+                            <span class="flag-reason">Heavy household expenses vs income</span>
+                        </div>
+                        <span class="flag-pts">+10 pts</span>
+                    </div>
+                </div>
+
+                <div class="paper-cite">
+                    📜 Scientific Justification: <strong>Lessmann et al. (2015) & Baesens et al. (2003)</strong>
+                </div>
+            </div>
+
+            <!-- ── PILLAR 3: BEHAVIORAL ── -->
+            <div class="pillar-card card-behavioral">
+                <div class="pillar-top">
+                    <div class="pillar-header-left">
+                        <div class="pillar-emoji">⚡</div>
+                        <div class="pillar-title-block">
+                            <span class="pillar-title">Behavioral Risk (BRS)</span>
+                            <span class="pillar-sub">Fraud & Account Abuse</span>
+                        </div>
+                    </div>
+                    <span class="weight-badge">25% Weight</span>
+                </div>
+
+                <div class="pillar-desc">
+                    Targeting <strong>unstable account behavior & fraud</strong>. Identifies cold-start risk, stale
+                    records, and temporary passthrough accounts.
+                </div>
+
+                <div class="flag-list">
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">🆕 New Customer (< 1 Year Tenure)</span>
+                                    <span class="flag-reason">Cold start; no track record at ATB</span>
+                        </div>
+                        <span class="flag-pts">+25 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">📉 Has Accounts in Overdraft</span>
+                            <span class="flag-reason">Maintains negative balance accounts</span>
+                        </div>
+                        <span class="flag-pts">+25 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">⌛ Stale KYC (> 2 Years / 730 Days)</span>
+                            <span class="flag-reason">Ignored bank notices for > 2 years</span>
+                        </div>
+                        <span class="flag-pts">+20 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <div class="flag-info">
+                            <span class="flag-label">🗑️ Low Total Balance (< 100 TND)</span>
+                                    <span class="flag-reason">Near-empty; risk of abandonment/mule use</span>
+                        </div>
+                        <span class="flag-pts">+15 pts</span>
+                    </div>
+                </div>
+
+                <div class="paper-cite">
+                    📜 Scientific Justification: <strong>Hand & Henley (1997) & Basel III (2011)</strong>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── FOOTER ── -->
+        <div class="slide-footer">
+            <div class="formula-pill">
+                Global Score: GRS = 0.40 × CRI + 0.35 × FFS + 0.25 × BRS
+            </div>
+            <div class="footer-stats">
+                <div>Risk Tiers: <span>LOW (<25) • MEDIUM (25-49) • HIGH (50-74) • VERY HIGH (≥75)</span>
+                </div>
+            </div>
+            <div>PFE ATB 2026 • Risk Engine</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

@@ -55,7 +55,7 @@ flowchart LR
 |------|----------|---------|
 | 1 | `01_eda` | Understand data quality, target balance, leakage |
 | 2 | `02_feature_engineering` | Build model-ready features, temporal train/test split |
-| 3 | `03_model_training` | Train XGBoost + Random Forest with SMOTETomek |
+| 3 | `03_model_training` | Train XGBoost, Random Forest, Extra Trees, Logistic Regression |
 | 4 | `04_shap_explainability` | Global/local feature importance |
 | 5 | `05_model_selection_report` | Compare metrics, pick production model |
 """
@@ -117,9 +117,10 @@ def plot_confusion_matrices(
     figsize: tuple[float, float] = (12, 5),
 ) -> plt.Figure:
     n = len(models)
-    fig, axes = plt.subplots(1, n, figsize=figsize)
-    if n == 1:
-        axes = [axes]
+    ncols = min(n, 2)
+    nrows = (n + ncols - 1) // ncols
+    fig, axes = plt.subplots(nrows, ncols, figsize=(figsize[0], figsize[1] * nrows / max(nrows, 1)))
+    axes = np.atleast_1d(axes).ravel()
     for ax, (name, model) in zip(axes, models.items()):
         proba = model.predict_proba(X_test)[:, 1]
         pred = (proba >= thresholds[name]).astype(int)
@@ -127,6 +128,8 @@ def plot_confusion_matrices(
         disp = ConfusionMatrixDisplay(cm, display_labels=["Low risk", "High risk"])
         disp.plot(ax=ax, colorbar=False, cmap="Blues")
         ax.set_title(f"{name}\n(threshold={thresholds[name]:.3f})")
+    for ax in axes[len(models) :]:
+        ax.axis("off")
     fig.tight_layout()
     return fig
 

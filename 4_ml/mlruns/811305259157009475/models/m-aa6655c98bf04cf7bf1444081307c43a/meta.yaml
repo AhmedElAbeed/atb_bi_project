@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/Ahmed/Desktop/atb_bi_project/4_ml/mlruns/811305259157009475/models/m-aa6655c98bf04cf7bf1444081307c43a/artifacts
+creation_timestamp: 1781353047014
+experiment_id: '811305259157009475'
+last_updated_timestamp: 1781353062339
+model_id: m-aa6655c98bf04cf7bf1444081307c43a
+model_type: null
+name: sklearn_model
+source_run_id: 9de0bd0b1f804acfa96dfdb21cb3e42c
+status: 2
+status_message: null

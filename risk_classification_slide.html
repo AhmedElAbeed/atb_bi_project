@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Risk Classification — KYC, PEP & Risk Tiers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-sub: #64748b;
+
+            /* Risk tier colours */
+            --low-bg: #dcfce7;
+            --low-text: #14532d;
+            --low-border: #86efac;
+            --med-bg: #fef9c3;
+            --med-text: #713f12;
+            --med-border: #fde047;
+            --high-bg: #ffedd5;
+            --high-text: #7c2d12;
+            --high-border: #fdba74;
+            --vhigh-bg: #fee2e2;
+            --vhigh-text: #7f1d1d;
+            --vhigh-border: #fca5a5;
+
+            /* KYC / Compliance Blue */
+            --blue: #2563eb;
+            --blue-light: #eff6ff;
+            --blue-border: #bfdbfe;
+            --blue-badge: #dbeafe;
+            --blue-text: #1e40af;
+
+            /* PEP / Red */
+            --red: #e11d48;
+            --red-light: #fff1f2;
+            --red-border: #fecdd3;
+            --red-badge: #ffe4e6;
+            --red-text: #9f1239;
+
+            /* Score engine / Purple */
+            --purple: #7c3aed;
+            --purple-light: #f5f3ff;
+            --purple-border: #ddd6fe;
+
+            --radius: 20px;
+            --radius-sm: 12px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+            -webkit-font-smoothing: antialiased;
+            color: var(--text-main);
+        }
+
+        /* 16:9 canvas */
+        .slide {
+            width: 1600px;
+            background: var(--white);
+            border-radius: 28px;
+            padding: 38px 42px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.09), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        /* ── HEADER ── */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 18px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header-left h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+        }
+
+        .header-left p {
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .atb-badge {
+            background: #0f172a;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: var(--radius-pill);
+            font-size: 12.5px;
+            font-weight: 700;
+        }
+
+        /* ── MAIN LAYOUT: 2 left concept cards + 1 right tier table ── */
+        .body-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 22px;
+            flex: 1;
+        }
+
+        /* ── CONCEPT CARD (KYC / PEP) ── */
+        .concept-card {
+            border-radius: var(--radius);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .card-kyc {
+            border: 2.5px solid var(--blue);
+            background: var(--white);
+            box-shadow: 0 8px 24px -6px rgba(37, 99, 235, 0.07);
+        }
+
+        .card-pep {
+            border: 2.5px solid var(--red);
+            background: var(--white);
+            box-shadow: 0 8px 24px -6px rgba(225, 29, 72, 0.07);
+        }
+
+        .concept-top {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .concept-emoji {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            flex-shrink: 0;
+        }
+
+        .card-kyc .concept-emoji {
+            background: var(--blue-light);
+        }
+
+        .card-pep .concept-emoji {
+            background: var(--red-light);
+        }
+
+        .concept-title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .concept-title {
+            font-size: 19px;
+            font-weight: 800;
+        }
+
+        .card-kyc .concept-title {
+            color: var(--blue);
+        }
+
+        .card-pep .concept-title {
+            color: var(--red);
+        }
+
+        .concept-sub {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        .concept-desc {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .concept-desc strong {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        /* Highlight stat box */
+        .impact-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .impact-box {
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .card-kyc .impact-box {
+            background: var(--blue-light);
+            border: 1px solid var(--blue-border);
+        }
+
+        .card-pep .impact-box {
+            background: var(--red-light);
+            border: 1px solid var(--red-border);
+        }
+
+        .impact-val {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .card-kyc .impact-val {
+            color: var(--blue);
+        }
+
+        .card-pep .impact-val {
+            color: var(--red);
+        }
+
+        .impact-label {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Mini flag list */
+        .flag-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .flag-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 14px;
+            background: #fafafa;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .flag-label {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .flag-pts {
+            font-size: 13px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+        }
+
+        .card-kyc .flag-pts {
+            background: var(--blue-badge);
+            color: var(--blue-text);
+        }
+
+        .card-pep .flag-pts {
+            background: var(--red-badge);
+            color: var(--red-text);
+        }
+
+        /* ── RIGHT PANEL: RISK TIER TABLE ── */
+        .tier-card {
+            border: 2.5px solid var(--purple-border);
+            border-radius: var(--radius);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            background: var(--white);
+            box-shadow: 0 8px 24px -6px rgba(124, 58, 237, 0.07);
+        }
+
+        .tier-title {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--purple);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .score-formula {
+            background: var(--purple-light);
+            border: 1.5px solid var(--purple-border);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .formula-label {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--purple);
+        }
+
+        .formula-text {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        /* Tier table */
+        .tier-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tier-table thead th {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--text-sub);
+            padding: 10px 14px;
+            background: #fafafa;
+            text-align: left;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .tier-table tbody td {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 12px 14px;
+            border-bottom: 1px solid #f8fafc;
+            vertical-align: middle;
+        }
+
+        .tier-badge {
+            padding: 5px 14px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 800;
+            display: inline-block;
+        }
+
+        .tier-low {
+            background: var(--low-bg);
+            color: var(--low-text);
+        }
+
+        .tier-med {
+            background: var(--med-bg);
+            color: var(--med-text);
+        }
+
+        .tier-high {
+            background: var(--high-bg);
+            color: var(--high-text);
+        }
+
+        .tier-vhigh {
+            background: var(--vhigh-bg);
+            color: var(--vhigh-text);
+        }
+
+        .action-tag {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Population bar */
+        .pop-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pop-title {
+            font-size: 11.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-sub);
+        }
+
+        .pop-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pop-bar-label {
+            width: 72px;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .pop-bar-track {
+            flex: 1;
+            background: #f1f5f9;
+            border-radius: var(--radius-pill);
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .pop-bar-fill {
+            height: 100%;
+            border-radius: var(--radius-pill);
+        }
+
+        .pop-bar-pct {
+            width: 48px;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* ── FOOTER ── */
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 14px;
+            border-top: 1.5px dashed #e2e8f0;
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .footer-stats {
+            display: flex;
+            gap: 28px;
+        }
+
+        .footer-stats span {
+            color: var(--text-main);
+            font-weight: 800;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide">
+
+        <!-- ── HEADER ── -->
+        <div class="slide-header">
+            <div class="header-left">
+                <h1>CUSTOMER RISK CLASSIFICATION — KYC, PEP & RISK TIERS</h1>
+                <p>How missing KYC and PEP exposure raise the customer risk score and determine their tier (LOW → VERY
+                    HIGH)</p>
+            </div>
+            <div class="atb-badge">ARAB TUNISIAN BANK • RISK ENGINE</div>
+        </div>
+
+        <!-- ── BODY ── -->
+        <div class="body-layout">
+
+            <!-- ── CARD 1: KYC ── -->
+            <div class="concept-card card-kyc">
+                <div class="concept-top">
+                    <div class="concept-emoji">📋</div>
+                    <div class="concept-title-block">
+                        <span class="concept-title">Missing KYC</span>
+                        <span class="concept-sub">Know Your Customer — Identity Verification</span>
+                    </div>
+                </div>
+
+                <p class="concept-desc">
+                    KYC is the regulatory obligation for a bank to verify the identity of each customer. When a
+                    customer's KYC record is <strong>missing or outdated</strong>, the bank cannot confirm who they are
+                    — this is a major compliance risk and directly raises their score.
+                </p>
+
+                <!-- Impact stats -->
+                <div class="impact-row">
+                    <div class="impact-box">
+                        <span class="impact-val">500</span>
+                        <span class="impact-label">Customers with stale KYC (&gt;365 days)</span>
+                    </div>
+                    <div class="impact-box">
+                        <span class="impact-val">94.2%</span>
+                        <span class="impact-label">KYC completion rate in portfolio</span>
+                    </div>
+                </div>
+
+                <!-- How points are added -->
+                <div class="flag-list">
+                    <div class="flag-item">
+                        <span class="flag-label">🔴 KYC Not Completed</span>
+                        <span class="flag-pts">+35 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <span class="flag-label">🟠 KYC Date Missing (NULL)</span>
+                        <span class="flag-pts">+15 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <span class="flag-label">🟡 KYC Review Overdue (&gt;365 days)</span>
+                        <span class="flag-pts">+10 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <span class="flag-label">✅ KYC Complete &amp; Up-to-Date</span>
+                        <span class="flag-pts" style="background:#dcfce7; color:#14532d;">+0 pts</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── CARD 2: PEP ── -->
+            <div class="concept-card card-pep">
+                <div class="concept-top">
+                    <div class="concept-emoji">🏛️</div>
+                    <div class="concept-title-block">
+                        <span class="concept-title">PEP Exposure</span>
+                        <span class="concept-sub">Politically Exposed Person — AML Monitoring</span>
+                    </div>
+                </div>
+
+                <p class="concept-desc">
+                    A PEP is a person who holds or has held a prominent public position (politicians, senior officials,
+                    executives). Because of their influence, they carry a <strong>higher risk of corruption, bribery, or
+                        money laundering</strong> — banks must monitor them more closely under FATF guidelines.
+                </p>
+
+                <!-- Impact stats -->
+                <div class="impact-row">
+                    <div class="impact-box">
+                        <span class="impact-val">209</span>
+                        <span class="impact-label">PEP-flagged customers in portfolio</span>
+                    </div>
+                    <div class="impact-box">
+                        <span class="impact-val">+30 pts</span>
+                        <span class="impact-label">Automatic score penalty per PEP flag</span>
+                    </div>
+                </div>
+
+                <!-- PEP related flags -->
+                <div class="flag-list">
+                    <div class="flag-item">
+                        <span class="flag-label">🏛️ PEP Status Confirmed</span>
+                        <span class="flag-pts">+30 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <span class="flag-label">🚨 Active Compliance Flag</span>
+                        <span class="flag-pts">+25 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <span class="flag-label">📁 Open Compliance Decision File</span>
+                        <span class="flag-pts">+10 pts</span>
+                    </div>
+                    <div class="flag-item">
+                        <span class="flag-label">🔒 Posting Restriction on Account</span>
+                        <span class="flag-pts">+15 pts</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── CARD 3: RISK TIERS TABLE ── -->
+            <div class="tier-card">
+                <div class="tier-title">
+                    <span>⚖️</span> From Score to Risk Tier
+                </div>
+
+                <!-- Formula -->
+                <div class="score-formula">
+                    <div class="formula-label">Global Risk Score Formula</div>
+                    <div class="formula-text">GRS = 0.40 × CRI + 0.35 × FFS + 0.25 × BRS</div>
+                </div>
+
+                <!-- Tier table -->
+                <table class="tier-table">
+                    <thead>
+                        <tr>
+                            <th>Risk Tier</th>
+                            <th>GRS Range</th>
+                            <th>Meaning</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="tier-badge tier-low">LOW</span></td>
+                            <td>GRS &lt; 25</td>
+                            <td style="color:var(--text-muted); font-size:12px;">Low compliance & financial risk</td>
+                            <td><span class="action-tag">✅ Standard monitoring</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="tier-badge tier-med">MEDIUM</span></td>
+                            <td>25 ≤ GRS &lt; 50</td>
+                            <td style="color:var(--text-muted); font-size:12px;">Some risk signals present</td>
+                            <td><span class="action-tag">👀 Enhanced review</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="tier-badge tier-high">HIGH</span></td>
+                            <td>50 ≤ GRS &lt; 75</td>
+                            <td style="color:var(--text-muted); font-size:12px;">Multiple flags — fragile profile</td>
+                            <td><span class="action-tag">🔔 Alert triggered</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="tier-badge tier-vhigh">VERY HIGH</span></td>
+                            <td>GRS ≥ 75</td>
+                            <td style="color:var(--text-muted); font-size:12px;">Critical — immediate action needed</td>
+                            <td><span class="action-tag">🚨 Manager escalation</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Real portfolio distribution -->
+                <div class="pop-section">
+                    <div class="pop-title">📊 Real Portfolio Distribution (136,676 customers)</div>
+                    <div class="pop-bar-row">
+                        <span class="pop-bar-label" style="color:var(--low-text);">LOW</span>
+                        <div class="pop-bar-track">
+                            <div class="pop-bar-fill" style="width:47.7%; background:#4ade80;"></div>
+                        </div>
+                        <span class="pop-bar-pct" style="color:var(--low-text);">47.7%</span>
+                    </div>
+                    <div class="pop-bar-row">
+                        <span class="pop-bar-label" style="color:var(--med-text);">MEDIUM</span>
+                        <div class="pop-bar-track">
+                            <div class="pop-bar-fill" style="width:51%; background:#facc15;"></div>
+                        </div>
+                        <span class="pop-bar-pct" style="color:var(--med-text);">51.0%</span>
+                    </div>
+                    <div class="pop-bar-row">
+                        <span class="pop-bar-label" style="color:var(--high-text);">HIGH</span>
+                        <div class="pop-bar-track">
+                            <div class="pop-bar-fill" style="width:1.3%; background:#fb923c;"></div>
+                        </div>
+                        <span class="pop-bar-pct" style="color:var(--high-text);">1.3%</span>
+                    </div>
+                    <div class="pop-bar-row">
+                        <span class="pop-bar-label" style="color:var(--vhigh-text);">VERY HIGH</span>
+                        <div class="pop-bar-track">
+                            <div class="pop-bar-fill" style="width:0.5%; background:#f87171;"></div>
+                        </div>
+                        <span class="pop-bar-pct" style="color:var(--vhigh-text);">&lt; 1%</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── FOOTER ── -->
+        <div class="slide-footer">
+            <div class="footer-stats">
+                <div>Compliance Pillar (CRI) : <span>40% of Global Risk Score</span></div>
+                <div>KYC Incompleteness : <span>Biggest single driver (+35 pts)</span></div>
+                <div>PEP Portfolio : <span>209 flagged · Enhanced due diligence required</span></div>
+            </div>
+            <div>PFE ATB 2026 • Risk Engine</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

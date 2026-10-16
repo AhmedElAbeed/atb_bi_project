@@ -1,6 +1,63 @@
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: atb-airflow:2.9.1
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS: "False"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
+    AIRFLOW__SCHEDULER__TASK_INSTANCE_HEARTBEAT_TIMEOUT: "300"
+    AIRFLOW__SCHEDULER__TASK_INSTANCE_HEARTBEAT_SEC: "30"
+    AIRFLOW__SCHEDULER__SCHEDULER_HEALTH_CHECK_THRESHOLD: "60"
+    AIRFLOW_HOME: /opt/airflow
+    PYTHONPATH: /opt/airflow:/opt/airflow/ml_src:/opt/airflow/atb_project/4_ml/src
+    ATB_PROJECT_ROOT: /opt/airflow/atb_project
+    DBT_TARGET: prod
+    DBT_DRIVER: "ODBC Driver 17 for SQL Server"
+    DBT_SERVER: host.docker.internal
+    DBT_PORT: "1434"
+    DBT_DATABASE: ATB_BI
+    DBT_SCHEMA: PFE_DWH
+    DBT_USER: airbyte_user
+    DBT_PASSWORD: AZERTY123
+    DBT_ENCRYPT: "false"
+    DBT_TRUST_CERT: "true"
+    DBT_THREADS_PROD: "8"
+    DBT_TIMEOUT_SECONDS: "300"
+    DBT_RETRIES_PROD: "3"
+    SQL_SERVER_HOST: host.docker.internal
+    SQL_SERVER_PORT: "1434"
+    SQL_SERVER_DATABASE: ATB_BI
+    SQL_SERVER_USER: airbyte_user
+    SQL_SERVER_PASSWORD: AZERTY123
+    SQL_SERVER_DRIVER: "ODBC Driver 17 for SQL Server"
+    ATB_SQL_SERVER: host.docker.internal
+    ATB_SQL_PORT: "1434"
+    ATB_SQL_DATABASE: ATB_BI
+    ATB_SQL_USERNAME: airbyte_user
+    ATB_SQL_PASSWORD: AZERTY123
+    AIRBYTE_SKIP: "true"
+    AIRBYTE_URL: http://host.docker.internal:8000
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ../3_transformation:/opt/airflow/dbt
+    - ../4_ml/src:/opt/airflow/ml_src
+    - ..:/opt/airflow/atb_project
+    - ../1_ingestion/Data/raw:/opt/airflow/data/raw
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  networks:
+    - atb-network
+
 services:
   postgres:
     image: postgres:15-alpine
+    container_name: atb-airflow-postgres
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
@@ -12,164 +69,63 @@ services:
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
-      retries: 5
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
     networks:
       - atb-network
 
   airflow-init:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: atb-airflow:2.9.1
+    <<: *airflow-common
     container_name: atb-airflow-init
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
-      - AIRFLOW_HOME=/opt/airflow
-      - PYTHONPATH=/opt/airflow:/opt/airflow/ml_src
-      - DBT_TARGET=prod
-      - DBT_DRIVER=ODBC Driver 17 for SQL Server
-      - DBT_SERVER=host.docker.internal
-      - DBT_PORT=1434
-      - DBT_DATABASE=ATB_BI
-      - DBT_SCHEMA=PFE_DWH
-      - DBT_USER=airbyte_user
-      - DBT_PASSWORD=AZERTY123
-      - DBT_ENCRYPT=false
-      - DBT_TRUST_CERT=true
-      - DBT_THREADS_PROD=8
-      - DBT_TIMEOUT_SECONDS=300
-      - DBT_RETRIES_PROD=3
-      - SQL_SERVER_HOST=host.docker.internal
-      - SQL_SERVER_PORT=1434
-      - SQL_SERVER_DATABASE=ATB_BI
-      - SQL_SERVER_DRIVER=ODBC Driver 17 for SQL Server
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ../3_transformation:/opt/airflow/dbt
-      - ../4_ml/src:/opt/airflow/ml_src
-      - ../1_ingestion/Data/raw:/opt/airflow/data/raw
     command: >
-      bash -c "airflow db init &&
-               airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true"
-    networks:
-      - atb-network
+      bash -c "airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true"
 
   airflow-webserver:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: atb-airflow:2.9.1
+    <<: *airflow-common
     container_name: atb-airflow-webserver
     depends_on:
+      postgres:
+        condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
-      - AIRFLOW_HOME=/opt/airflow
-      - PYTHONPATH=/opt/airflow:/opt/airflow/ml_src
-      - DBT_TARGET=prod
-      - DBT_DRIVER=ODBC Driver 17 for SQL Server
-      - DBT_SERVER=host.docker.internal
-      - DBT_PORT=1434
-      - DBT_DATABASE=ATB_BI
-      - DBT_SCHEMA=PFE_DWH
-      - DBT_USER=airbyte_user
-      - DBT_PASSWORD=AZERTY123
-      - DBT_ENCRYPT=false
-      - DBT_TRUST_CERT=true
-      - DBT_THREADS_PROD=8
-      - DBT_TIMEOUT_SECONDS=300
-      - DBT_RETRIES_PROD=3
-      # SQL Server Connection (for dbt and Python tasks)
-      - SQL_SERVER_HOST=host.docker.internal
-      - SQL_SERVER_PORT=1434
-      - SQL_SERVER_DATABASE=ATB_BI
-      - SQL_SERVER_DRIVER=ODBC Driver 17 for SQL Server
     ports:
       - "8080:8080"
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ../3_transformation:/opt/airflow/dbt
-      - ../4_ml/src:/opt/airflow/ml_src
-      - ../1_ingestion/Data/raw:/opt/airflow/data/raw
     command: airflow webserver
-    networks:
-      - atb-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   airflow-scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: atb-airflow:2.9.1
+    <<: *airflow-common
     container_name: atb-airflow-scheduler
     depends_on:
+      postgres:
+        condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
-      - AIRFLOW_HOME=/opt/airflow
-      - PYTHONPATH=/opt/airflow:/opt/airflow/ml_src
-      - DBT_TARGET=prod
-      - DBT_DRIVER=ODBC Driver 17 for SQL Server
-      - DBT_SERVER=host.docker.internal
-      - DBT_PORT=1434
-      - DBT_DATABASE=ATB_BI
-      - DBT_SCHEMA=PFE_DWH
-      - DBT_USER=airbyte_user
-      - DBT_PASSWORD=AZERTY123
-      - DBT_ENCRYPT=false
-      - DBT_TRUST_CERT=true
-      - DBT_THREADS_PROD=8
-      - DBT_TIMEOUT_SECONDS=300
-      - DBT_RETRIES_PROD=3
-      - SQL_SERVER_HOST=host.docker.internal
-      - SQL_SERVER_PORT=1434
-      - SQL_SERVER_DATABASE=ATB_BI
-      - SQL_SERVER_DRIVER=ODBC Driver 17 for SQL Server
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ../3_transformation:/opt/airflow/dbt
-      - ../4_ml/src:/opt/airflow/ml_src
-      - ../1_ingestion/Data/raw:/opt/airflow/data/raw
     command: airflow scheduler
-    networks:
-      - atb-network
+    restart: unless-stopped
 
   airflow-triggerer:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: atb-airflow:2.9.1
+    <<: *airflow-common
     container_name: atb-airflow-triggerer
     depends_on:
+      postgres:
+        condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW_HOME=/opt/airflow
-      - DBT_TARGET=prod
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
     command: airflow triggerer
-    networks:
-      - atb-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:

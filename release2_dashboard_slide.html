@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release 2: BI Dashboard & Strategic KPIs - ATB BI Project</title>
+    <!-- Modern Typography: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-sub: #64748b;
+
+            /* GIMSI / Primary Green Theme */
+            --gimsi-green: #10b981;
+            --gimsi-green-light: #ecfdf5;
+            --gimsi-green-border: #a7f3d0;
+
+            /* Dashboard (Gold/Amber) Primary Theme */
+            --dash-amber: #d97706;
+            --dash-amber-light: #fffbeb;
+            --dash-amber-border: #fde68a;
+            --dash-badge-bg: #fef3c7;
+            --dash-badge-text: #92400e;
+
+            /* Executive / Blue Theme */
+            --exec-blue: #2563eb;
+            --exec-blue-light: #eff6ff;
+            --exec-blue-border: #bfdbfe;
+            --exec-badge-bg: #dbeafe;
+            --exec-badge-text: #1e40af;
+
+            /* Compliance / Red-Rose Theme */
+            --comp-red: #e11d48;
+            --comp-red-light: #fff1f2;
+            --comp-red-border: #fecdd3;
+            --comp-badge-bg: #ffe4e6;
+            --comp-badge-text: #9f1239;
+
+            /* Branch RLS / Emerald Theme */
+            --rls-emerald: #059669;
+            --rls-emerald-light: #ecfdf5;
+            --rls-emerald-border: #a7f3d0;
+            --rls-badge-bg: #d1fae5;
+            --rls-badge-text: #065f46;
+
+            --tag-bg: #f1f5f9;
+            --tag-text: #475569;
+            --tag-border: #e2e8f0;
+
+            --radius-main: 24px;
+            --radius-card: 16px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 16:9 Canva Presentation Canvas */
+        .slide-canvas {
+            width: 1600px;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Top Header */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .atb-badge {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main Content Grid: Left RBAC Sidebar + Right Main Cards */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 24px;
+        }
+
+        /* Left Column: RBAC & Navigation Framework */
+        .rbac-sidebar {
+            background: #fffdfa;
+            border: 2px solid var(--dash-amber-border);
+            border-radius: var(--radius-main);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .rbac-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--dash-amber);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 10px;
+            border-bottom: 1.5px dashed var(--dash-amber-border);
+        }
+
+        .rbac-role-card {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-card);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .role-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .role-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .role-badge {
+            padding: 3px 8px;
+            border-radius: var(--radius-pill);
+            font-size: 10.5px;
+            font-weight: 800;
+        }
+
+        .role-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.45;
+            font-weight: 500;
+        }
+
+        /* Right Content Grid: 4 Feature Cards (2x2 Grid Layout) */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .dash-card {
+            background: #ffffff;
+            border-radius: var(--radius-main);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04);
+            border: 2px solid #e2e8f0;
+        }
+
+        .dash-card.card-exec {
+            border-color: var(--exec-blue);
+        }
+
+        .dash-card.card-comp {
+            border-color: var(--comp-red);
+        }
+
+        .dash-card.card-risk {
+            border-color: var(--dash-amber);
+        }
+
+        .dash-card.card-rls {
+            border-color: var(--rls-emerald);
+        }
+
+        .dash-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dash-card-title {
+            font-size: 17px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-exec .dash-card-title {
+            color: var(--exec-blue);
+        }
+
+        .card-comp .dash-card-title {
+            color: var(--comp-red);
+        }
+
+        .card-risk .dash-card-title {
+            color: var(--dash-amber);
+        }
+
+        .card-rls .dash-card-title {
+            color: var(--rls-emerald);
+        }
+
+        .us-tag {
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 800;
+        }
+
+        .card-exec .us-tag {
+            background: var(--exec-badge-bg);
+            color: var(--exec-badge-text);
+        }
+
+        .card-comp .us-tag {
+            background: var(--comp-badge-bg);
+            color: var(--comp-badge-text);
+        }
+
+        .card-risk .us-tag {
+            background: var(--dash-badge-bg);
+            color: var(--dash-badge-text);
+        }
+
+        .card-rls .us-tag {
+            background: var(--rls-badge-bg);
+            color: var(--rls-badge-text);
+        }
+
+        /* KPI Metric Badges Container inside Card */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .kpi-stat-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .kpi-stat-value {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .kpi-stat-label {
+            font-size: 11px;
+            color: var(--text-sub);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .dash-card-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .kpi-formula-box {
+            background: #fafafa;
+            border: 1.5px solid #e2e8f0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: var(--text-main);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .formula-icon {
+            font-size: 14px;
+        }
+
+        /* Footer Info */
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 14px;
+            border-top: 1.5px dashed #e2e8f0;
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .footer-left-stats {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-stat-item span {
+            color: var(--text-main);
+            font-weight: 800;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide-canvas">
+
+        <!-- Header Bar -->
+        <div class="slide-header">
+            <div class="header-left">
+                <h1>RELEASE 2 : BI DASHBOARD & STRATEGIC KPIS</h1>
+                <p>Streamlit Multi-Page BI Application • Role-Based Access Control (RBAC) • Strategic Banking KPIs &
+                    Formulas</p>
+            </div>
+            <div class="atb-badge">ARAB TUNISIAN BANK • SPRINT 3</div>
+        </div>
+
+        <!-- Main Layout: RBAC Sidebar (Left) + 2x2 Dashboard Cards (Right) -->
+        <div class="main-layout">
+
+            <!-- Left Sidebar: RBAC User Roles -->
+            <div class="rbac-sidebar">
+                <div class="rbac-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    RBAC Roles & Access
+                </div>
+
+                <!-- Role 1 -->
+                <div class="rbac-role-card">
+                    <div class="role-title-row">
+                        <span class="role-name">DG_CENTRAL</span>
+                        <span class="role-badge" style="background:#dbeafe; color:#1e40af;">Full Scope</span>
+                    </div>
+                    <p class="role-desc">
+                        General Management view: 643M DT exposure, national sector heatmaps & PDF export packs.
+                    </p>
+                </div>
+
+                <!-- Role 2 -->
+                <div class="rbac-role-card">
+                    <div class="role-title-row">
+                        <span class="role-name">CHEF_CONFORMITE</span>
+                        <span class="role-badge" style="background:#ffe4e6; color:#9f1239;">AML / PEP</span>
+                    </div>
+                    <p class="role-desc">
+                        Chief Compliance Officer: 209 PEP cases, overdue KYC queue (>365d), and watchlist alerts.
+                    </p>
+                </div>
+
+                <!-- Role 3 -->
+                <div class="rbac-role-card">
+                    <div class="role-title-row">
+                        <span class="role-name">CHEF_AGENCE</span>
+                        <span class="role-badge" style="background:#d1fae5; color:#065f46;">Agency RLS</span>
+                    </div>
+                    <p class="role-desc">
+                        Branch Managers restricted strictly to local Desk Account Officer (DAO) agency scope.
+                    </p>
+                </div>
+
+
+            </div>
+
+            <!-- Right Content Grid: 4 Detailed Feature Cards (2x2) -->
+            <div class="dashboard-grid">
+
+                <!-- Card 1: Executive Overview (US 7) -->
+                <div class="dash-card card-exec">
+                    <div class="dash-card-header">
+                        <h3 class="dash-card-title">⭐ Executive Overview</h3>
+                        <span class="us-tag">US 7 • National View</span>
+                    </div>
+
+                    <!-- Concrete KPI Badges -->
+                    <div class="kpi-row">
+                        <div class="kpi-stat-box">
+                            <span class="kpi-stat-value">136,676</span>
+                            <span class="kpi-stat-label">Customers</span>
+                        </div>
+                        <div class="kpi-stat-box">
+                            <span class="kpi-stat-value">643M DT</span>
+                            <span class="kpi-stat-label">Total Balance</span>
+                        </div>
+                        <div class="kpi-stat-box">
+                            <span class="kpi-stat-value">14.1%</span>
+                            <span class="kpi-stat-label">Overdraft Rate</span>
+                        </div>
+                    </div>
+
+                    <p class="dash-card-desc">
+                        Macro portfolio health cards, risk-tier donut distribution (47.7% Low, 52.3% Medium), sector
+                        balance breakdown, and drill-down exports.
+                    </p>
+
+                    <div class="kpi-formula-box">
+                        <span class="formula-icon">🧮</span> Formula: Overdraft % = (|{c : balance < 0}| / Total
+                            Customers) × 100% </div>
+                    </div>
+
+                    <!-- Card 2: Compliance & PEP Watchlist (US 5) -->
+                    <div class="dash-card card-comp">
+                        <div class="dash-card-header">
+                            <h3 class="dash-card-title">🛡️ Compliance Watchlist</h3>
+                            <span class="us-tag">US 5 • Compliance CCO</span>
+                        </div>
+
+                        <!-- Concrete KPI Badges -->
+                        <div class="kpi-row">
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">209</span>
+                                <span class="kpi-stat-label">PEP Flagged</span>
+                            </div>
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">500</span>
+                                <span class="kpi-stat-label">Stale KYC (>365d)</span>
+                            </div>
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">94.2%</span>
+                                <span class="kpi-stat-label">KYC Complete</span>
+                            </div>
+                        </div>
+
+                        <p class="dash-card-desc">
+                            Politically Exposed Persons (PEP) registry monitoring, stale KYC review backlog queues,
+                            active compliance flags, and enhanced due diligence tables.
+                        </p>
+
+                        <div class="kpi-formula-box">
+                            <span class="formula-icon">🧮</span> Formula: KYC Rate % = (|{c : is_kyc_complete = 1}| /
+                            Total Customers) × 100%
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Customer Risk Analytics (US 5 & 9) -->
+                    <div class="dash-card card-risk">
+                        <div class="dash-card-header">
+                            <h3 class="dash-card-title">⚖️ Customer Risk Analytics</h3>
+                            <span class="us-tag">US 5 & 9 • Risk Fiche & AI</span>
+                        </div>
+
+                        <!-- Concrete KPI Badges -->
+                        <div class="kpi-row">
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">28.9</span>
+                                <span class="kpi-stat-label">Avg GRS Score</span>
+                            </div>
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">1.3%</span>
+                                <span class="kpi-stat-label">High-Risk Share</span>
+                            </div>
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">40 / 35 / 25</span>
+                                <span class="kpi-stat-label">CRI / FFS / BRS</span>
+                            </div>
+                        </div>
+
+                        <p class="dash-card-desc">
+                            3-Pillar Composite Risk Engine (Compliance CRI 40% + Financial FFS 35% + Behavioural BRS
+                            25%), customer risk fiches, and AI chart explanations.
+                        </p>
+
+                        <div class="kpi-formula-box">
+                            <span class="formula-icon">🧮</span> Formula: GRS = 0.40 × CRI + 0.35 × FFS + 0.25 × BRS
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Branch Segregation & RLS (US 6) -->
+                    <div class="dash-card card-rls">
+                        <div class="dash-card-header">
+                            <h3 class="dash-card-title">🏢 Branch Segregation (RLS)</h3>
+                            <span class="us-tag">US 6 • Branch RLS</span>
+                        </div>
+
+                        <!-- Concrete KPI Badges -->
+                        <div class="kpi-row">
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">150</span>
+                                <span class="kpi-stat-label">DAO Officers</span>
+                            </div>
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">RLS</span>
+                                <span class="kpi-stat-label">Multi-Tenant SQL</span>
+                            </div>
+                            <div class="kpi-stat-box">
+                                <span class="kpi-stat-value">Zero</span>
+                                <span class="kpi-stat-label">Data Leakage</span>
+                            </div>
+                        </div>
+
+                        <p class="dash-card-desc">
+                            Dynamic session-injected SQL query filtering restricting Branch Managers strictly to their
+                            local agency perimeter while maintaining national benchmark comparisons.
+                        </p>
+
+                        <div class="kpi-formula-box">
+                            <span class="formula-icon">🧮</span> Formula: High-Risk Share % = (|{c : GRS ≥ 50}| / Total
+                            Customers) × 100%
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Slide Footer Metadata -->
+            <div class="slide-footer">
+                <div class="footer-left-stats">
+                    <div class="footer-stat-item">Framework : <span>Streamlit Multi-Page App</span></div>
+                    <div class="footer-stat-item">Security : <span>RBAC & Row-Level Security (RLS)</span></div>
+                    <div class="footer-stat-item">AI Engine : <span>Google Gemini Chart Explanations</span></div>
+                </div>
+                <div>
+                    PFE ATB 2026 • Release 2
+                </div>
+            </div>
+
+        </div>
+
+</body>
+
+</html>

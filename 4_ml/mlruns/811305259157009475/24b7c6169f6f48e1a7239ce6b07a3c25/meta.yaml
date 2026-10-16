@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/Ahmed/Desktop/atb_bi_project/4_ml/mlruns/811305259157009475/24b7c6169f6f48e1a7239ce6b07a3c25/artifacts
+end_time: 1783762938791
+entry_point_name: ''
+experiment_id: '811305259157009475'
+lifecycle_stage: active
+run_id: 24b7c6169f6f48e1a7239ce6b07a3c25
+run_name: xgboost
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1783762938723
+status: 3
+tags: []
+user_id: Ahmed

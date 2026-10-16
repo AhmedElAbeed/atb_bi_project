@@ -1,0 +1,16 @@
+creation_timestamp: 1781091754249
+current_stage: Archived
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1781353062452
+model_id: m-98b4a041673a4634b42152b6226346d1
+name: atb_customer_risk_classifier
+run_id: 8744fe82af72439e99fe1527201d4132
+run_link: null
+source: models:/m-98b4a041673a4634b42152b6226346d1
+status: READY
+status_message: null
+storage_location: file:///C:/Users/Ahmed/Desktop/atb_bi_project/4_ml/mlruns/811305259157009475/models/m-98b4a041673a4634b42152b6226346d1/artifacts
+user_id: null
+version: 1
+workspace: default

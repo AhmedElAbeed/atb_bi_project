@@ -4,7 +4,7 @@ Notebook order:
 
 1. `notebooks/01_eda.ipynb` — data profiling and target balance
 2. `notebooks/02_feature_engineering.ipynb` — leakage-safe features and train/test split
-3. `notebooks/03_model_training.ipynb` — XGBoost + Random Forest with comparison charts
+3. `notebooks/03_model_training.ipynb` — XGBoost, Random Forest, Extra Trees, Logistic Regression
 4. `notebooks/04_shap_explainability.ipynb` — global and local SHAP plots
 5. `notebooks/05_model_selection_report.ipynb` — final metrics, ROC/PR, and model decision
 
@@ -21,6 +21,6 @@ The notebooks use the warehouse risk fact as the primary supervised-learning sou
 
 - binary high-risk target derived from `global_risk_score >= 50`
 - SMOTETomek for class imbalance
-- XGBoost as the primary model
-- Random Forest as the benchmark model
+- XGBoost as the primary production model
+- Random Forest, Extra Trees, and Logistic Regression as comparison benchmarks
 - MLflow file-based tracking by default unless `MLFLOW_TRACKING_URI` is set

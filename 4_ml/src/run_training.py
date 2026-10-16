@@ -5,6 +5,8 @@ import os
 import sys
 from pathlib import Path
 
+import joblib
+
 
 # ensure local src is importable when running from repo root
 ROOT = Path(__file__).resolve().parents[2]
@@ -63,6 +65,7 @@ def main():
         y_proba = best.predict_proba(X_test)[:, 1]
         threshold, best_f1 = modeling.optimize_threshold(y_test, y_proba)
         metrics = modeling.evaluate_model(best, X_test, y_test, threshold=threshold)
+        metrics["threshold"] = threshold
         print(f"{spec.name} metrics: {metrics}", flush=True)
         artifact = modeling.log_metrics_and_artifacts(
             model_name=spec.name,
@@ -71,11 +74,26 @@ def main():
             param_summary=search.best_params_,
             artifact_filename=f"{spec.name}_best.pkl",
         )
-        results[spec.name] = {"metrics": metrics, "best_params": search.best_params_, "artifact": artifact}
+        results[spec.name] = {
+            "metrics": metrics,
+            "best_params": search.best_params_,
+            "artifact": artifact,
+            "threshold": threshold,
+        }
 
-    # choose best by f1
-    best_model_name = max(results.keys(), key=lambda k: results[k]["metrics"]["f1"])
-    summary = {"best_model": best_model_name, "results": results}
+    best_model_name = modeling.PRODUCTION_MODEL
+    if best_model_name not in results:
+        raise SystemExit(f"Production model {best_model_name!r} was not trained.")
+    best_entry = results[best_model_name]
+    best_model = joblib.load(best_entry["artifact"])
+    registry = modeling.register_model_to_production(
+        model_name=best_model_name,
+        best_model=best_model,
+        metrics=best_entry["metrics"],
+        param_summary=best_entry["best_params"],
+        artifact_filename=f"{best_model_name}_best.pkl",
+    )
+    summary = {"best_model": best_model_name, "results": results, "registry": registry}
 
     out_dir = ROOT / "4_ml" / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)

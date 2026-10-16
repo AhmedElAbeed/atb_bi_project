@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release 2: ELT Architecture & Kimball Warehouse - ATB BI Project</title>
+    <!-- Modern Typography: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-sub: #64748b;
+
+            /* GIMSI / Primary Colors */
+            --gimsi-green: #10b981;
+            --gimsi-green-light: #ecfdf5;
+            --gimsi-green-border: #a7f3d0;
+
+            /* ELT Pipeline (Blue) Theme */
+            --elt-blue: #2563eb;
+            --elt-blue-light: #eff6ff;
+            --elt-blue-border: #bfdbfe;
+            --elt-badge-bg: #dbeafe;
+            --elt-badge-text: #1e40af;
+
+            /* dbt & Warehouse (Purple/Indigo) Theme */
+            --dwh-purple: #7c3aed;
+            --dwh-purple-light: #f5f3ff;
+            --dwh-purple-border: #ddd6fe;
+            --dwh-badge-bg: #ede9fe;
+            --dwh-badge-text: #5b21b6;
+
+            --tag-bg: #f1f5f9;
+            --tag-text: #475569;
+            --tag-border: #e2e8f0;
+
+            --radius-main: 24px;
+            --radius-card: 16px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 16:9 Canva Presentation Canvas */
+        .slide-canvas {
+            width: 1600px;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Top Header */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .atb-badge {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main Content Grid: Left GIMSI Sidebar + Right Main Section */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+        }
+
+        /* Left Column: GIMSI Framework */
+        .gimsi-sidebar {
+            background: #fafafa;
+            border: 2px solid var(--gimsi-green-border);
+            border-radius: var(--radius-main);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .gimsi-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--gimsi-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 10px;
+            border-bottom: 1.5px dashed var(--gimsi-green-border);
+        }
+
+        .gimsi-step-card {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-card);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .step-num-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-badge {
+            width: 24px;
+            height: 24px;
+            background: var(--gimsi-green);
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .step-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.45;
+            padding-left: 32px;
+            font-weight: 500;
+        }
+
+        /* Right Section: ELT Pipeline Top + dbt & Kimball DWH Bottom */
+        .right-content-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        /* Top Box: PIPELINE ELT */
+        .elt-box {
+            background: #ffffff;
+            border: 2px solid var(--elt-blue);
+            border-radius: var(--radius-main);
+            padding: 22px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.05);
+        }
+
+        .box-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .box-title {
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .elt-box .box-title {
+            color: var(--elt-blue);
+        }
+
+        .dwh-box .box-title {
+            color: var(--dwh-purple);
+        }
+
+        .us-badge-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .us-pill {
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .elt-box .us-pill {
+            background: var(--elt-badge-bg);
+            color: var(--elt-badge-text);
+        }
+
+        .dwh-box .us-pill {
+            background: var(--dwh-badge-bg);
+            color: var(--dwh-badge-text);
+        }
+
+        /* Horizontal Pipeline Flow (4 connected cards) */
+        .elt-flow-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            position: relative;
+        }
+
+        .flow-card {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--radius-card);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+            position: relative;
+        }
+
+        .flow-card-top {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .flow-stage-title {
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--elt-blue);
+            letter-spacing: 0.5px;
+        }
+
+        .flow-card-heading {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .flow-card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.45;
+            font-weight: 500;
+        }
+
+        .metric-highlight {
+            background: #ffffff;
+            border: 1px solid var(--elt-blue-border);
+            color: var(--elt-blue);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        /* Arrow Connector between flow cards */
+        .flow-card:not(:last-child)::after {
+            content: "➔";
+            position: absolute;
+            right: -13px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            background: #ffffff;
+            color: var(--elt-blue);
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1px solid var(--elt-blue-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 800;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Bottom Box: DBT STANDARDIZATION & KIMBALL WAREHOUSE */
+        .dwh-box {
+            background: #ffffff;
+            border: 2px solid var(--dwh-purple);
+            border-radius: var(--radius-main);
+            padding: 22px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.05);
+        }
+
+        .dwh-features-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .dwh-feature-card {
+            background: #faf8ff;
+            border: 1.5px solid var(--dwh-purple-border);
+            border-radius: var(--radius-card);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .dwh-card-icon-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dwh-card-icon {
+            font-size: 18px;
+        }
+
+        .dwh-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .dwh-card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.45;
+            font-weight: 500;
+        }
+
+        .dwh-tag {
+            background: var(--dwh-badge-bg);
+            color: var(--dwh-badge-text);
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            text-align: center;
+        }
+
+        /* Footer Info */
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 14px;
+            border-top: 1.5px dashed #e2e8f0;
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .footer-left-stats {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-stat-item span {
+            color: var(--text-main);
+            font-weight: 800;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide-canvas">
+
+        <!-- Header Bar -->
+        <div class="slide-header">
+            <div class="header-left">
+                <h1>RELEASE 2 : ELT ARCHITECTURE & KIMBALL WAREHOUSE</h1>
+                <p>GIMSI Framework • Airbyte Ingestion • dbt Standardization • Kimball Constellation Model</p>
+            </div>
+            <div class="atb-badge">ARAB TUNISIAN BANK • SPRINT 3</div>
+        </div>
+
+        <!-- Main Layout: GIMSI Sidebar (Left) + Right Stack (Top & Bottom) -->
+        <div class="main-layout">
+
+            <!-- Left Sidebar: GIMSI Methodology -->
+            <div class="gimsi-sidebar">
+                <div class="gimsi-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                    GIMSI Framework
+                </div>
+
+                <!-- Step 1 -->
+                <div class="gimsi-step-card">
+                    <div class="step-num-title">
+                        <span class="step-badge">1</span>
+                        <h3 class="step-title">Identification</h3>
+                    </div>
+                    <p class="step-desc">
+                        7 CSV banking extracts hosted on GitHub & ingested by Airbyte into ODS.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="gimsi-step-card">
+                    <div class="step-num-title">
+                        <span class="step-badge">2</span>
+                        <h3 class="step-title">Design</h3>
+                    </div>
+                    <p class="step-desc">
+                        Kimball Constellation schema (8 dims + 2 facts) & 3-Pillar Risk Score formulas.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="gimsi-step-card">
+                    <div class="step-num-title">
+                        <span class="step-badge">3</span>
+                        <h3 class="step-title">Realisation</h3>
+                    </div>
+                    <p class="step-desc">
+                        dbt ELT pipeline, SQL Server PFE_DWH & multi-page Streamlit RBAC app.
+                    </p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="gimsi-step-card">
+                    <div class="step-num-title">
+                        <span class="step-badge">4</span>
+                        <h3 class="step-title">Evaluation</h3>
+                    </div>
+                    <p class="step-desc">
+                        Airflow nightly schedule (02:00 UTC), dbt automated tests & continuous audit.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Content Stack: Top (ELT Pipeline) + Bottom (dbt & Kimball DWH) -->
+            <div class="right-content-stack">
+
+                <!-- TOP BOX: PIPELINE ELT (Blue Theme) -->
+                <div class="elt-box">
+                    <div class="box-title-row">
+                        <div class="box-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                            </svg>
+                            Pipeline ELT — Data Access & Extraction
+                        </div>
+                        <div class="us-badge-group">
+                            <span class="us-pill">US 4</span>
+                        </div>
+                    </div>
+
+                    <!-- 4 Horizontal Flow Cards -->
+                    <div class="elt-flow-grid">
+
+                        <!-- Stage 1: EXTRACT -->
+                        <div class="flow-card">
+                            <div class="flow-card-top">
+                                <span class="flow-stage-title">1. EXTRACT</span>
+                                <h4 class="flow-card-heading">Airbyte Engine</h4>
+                                <p class="flow-card-desc">
+                                    HTTPS CSV connectors pulling 7 source files from GitHub repository.
+                                </p>
+                            </div>
+                            <div class="metric-highlight">
+                                7 Source CSV Extracts
+                            </div>
+                        </div>
+
+                        <!-- Stage 2: LOAD -->
+                        <div class="flow-card">
+                            <div class="flow-card-top">
+                                <span class="flow-stage-title">2. LOAD</span>
+                                <h4 class="flow-card-heading">SQL Server ODS</h4>
+                                <p class="flow-card-desc">
+                                    Raw loading into PFE_ODS with schema & type validation.
+                                </p>
+                            </div>
+                            <div class="metric-highlight">
+                                281,960+ Rows Loaded
+                            </div>
+                        </div>
+
+                        <!-- Stage 3: TRANSFORM -->
+                        <div class="flow-card">
+                            <div class="flow-card-top">
+                                <span class="flow-stage-title">3. TRANSFORM</span>
+                                <h4 class="flow-card-heading">dbt 3-Tier ELT</h4>
+                                <p class="flow-card-desc">
+                                    Staging cleaning, bilingual OUI/NON to bit mapping, 3-Pillar Risk Engine.
+                                </p>
+                            </div>
+                            <div class="metric-highlight">
+                                CRI 40% • FFS 35% • BRS 25%
+                            </div>
+                        </div>
+
+                        <!-- Stage 4: WAREHOUSE -->
+                        <div class="flow-card">
+                            <div class="flow-card-top">
+                                <span class="flow-stage-title">4. WAREHOUSE</span>
+                                <h4 class="flow-card-heading">Kimball DWH</h4>
+                                <p class="flow-card-desc">
+                                    Constellation schema (8 Dims + 2 Facts) with zero NULL foreign keys.
+                                </p>
+                            </div>
+                            <div class="metric-highlight">
+                                0 NULL Foreign Keys
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- BOTTOM BOX: DBT STANDARDIZATION & KIMBALL CONSTELLATION SCHEMA (Purple Theme) -->
+                <div class="dwh-box">
+                    <div class="box-title-row">
+                        <div class="box-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <ellipse cx="12" cy="5" rx="9" ry="3" />
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                            </svg>
+                            dbt Standardization & Kimball Constellation Schema
+                        </div>
+                        <div class="us-badge-group">
+                            <span class="us-pill">US 5</span>
+                        </div>
+                    </div>
+
+                    <!-- 4 dbt & Kimball Schema Cards -->
+                    <div class="dwh-features-grid">
+
+                        <!-- Card 1: Bilingual Flag Mapping -->
+                        <div class="dwh-feature-card">
+                            <div class="dwh-card-icon-title">
+                                <span class="dwh-card-icon">🔀</span>
+                                <h4 class="dwh-card-title">Bilingual Flag Mapping</h4>
+                            </div>
+                            <p class="dwh-card-desc">
+                                Maps mixed French/English text (OUI/NON, YES/NO) into strict SQL bit booleans (1 or 0).
+                            </p>
+                            <span class="dwh-tag">is_kyc_complete • is_pep</span>
+                        </div>
+
+                        <!-- Card 2: Null & Code Defaults -->
+                        <div class="dwh-feature-card">
+                            <div class="dwh-card-icon-title">
+                                <span class="dwh-card-icon">🧼</span>
+                                <h4 class="dwh-card-title">Null & Code Defaults</h4>
+                            </div>
+                            <p class="dwh-card-desc">
+                                Converts empty strings '' into true SQL NULLs (nullif) and fills missing codes with
+                                'UNKNOWN'.
+                            </p>
+                            <span class="dwh-tag">Clean Data Staging</span>
+                        </div>
+
+                        <!-- Card 3: Date Parsing & Sentinel Keys -->
+                        <div class="dwh-feature-card">
+                            <div class="dwh-card-icon-title">
+                                <span class="dwh-card-icon">🛡️</span>
+                                <h4 class="dwh-card-title">Dates & UNK Sentinels</h4>
+                            </div>
+                            <p class="dwh-card-desc">
+                                Parses dates with try_convert(...,112); missing foreign keys resolve to -1 / UNK
+                                sentinels.
+                            </p>
+                            <span class="dwh-tag">Zero-NULL Foreign Keys</span>
+                        </div>
+
+                        <!-- Card 4: Kimball Constellation Model -->
+                        <div class="dwh-feature-card">
+                            <div class="dwh-card-icon-title">
+                                <span class="dwh-card-icon">🏛️</span>
+                                <h4 class="dwh-card-title">Kimball Constellation</h4>
+                            </div>
+                            <p class="dwh-card-desc">
+                                8 conformed dimensions linked to 2 central facts (fact_account & fact_customer_risk) via
+                                SKs.
+                            </p>
+                            <span class="dwh-tag">8 Dims • 2 Facts</span>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Slide Footer Metadata -->
+        <div class="slide-footer">
+            <div class="footer-left-stats">
+                <div class="footer-stat-item">Methodology : <span>GIMSI 4-Pillars</span></div>
+                <div class="footer-stat-item">Architecture : <span>Airbyte ➔ dbt ➔ PFE_DWH (Kimball Model)</span></div>
+                <div class="footer-stat-item">Warehouse Facts : <span>281,960 Rows (0 NULL FKs)</span></div>
+            </div>
+            <div>
+                PFE ATB 2026 • Release 2
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

@@ -10,3 +10,4 @@ pyodbc
 matplotlib
 seaborn
 joblib
+python-dotenv
